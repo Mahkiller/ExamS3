@@ -41,3 +41,20 @@ CREATE TABLE Moto_parametres (
     id INT PRIMARY KEY,
     prix_essence DECIMAL(6,2) NOT NULL
 );  
+
+CREATE TABLE Moto_validations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT NOT NULL,
+    date_validation DATE NOT NULL,
+    FOREIGN KEY (course_id) REFERENCES Moto_courses(id)
+);
+
+CREATE TABLE Moto_modifications_courses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT NOT NULL,
+    date_modification DATE NOT NULL,
+    champ_modifie VARCHAR(100) NOT NULL,
+    valeur_avant VARCHAR(255),
+    valeur_apres VARCHAR(255),
+    FOREIGN KEY (course_id) REFERENCES Moto_courses(id)
+);
