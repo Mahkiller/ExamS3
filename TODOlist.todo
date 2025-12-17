@@ -1,9 +1,9 @@
 Page 1: 
-        Total des Recettes, Depenses, Benefice
-        -Date
-        -Recette
-        -Depense
-        -Benefice
+        (Lucas)Total des Recettes, Depenses, Benefice
+                -Date
+                -Recette
+                -Depense
+                -Benefice
 
         BDD: mysql
 (ok)    (Mahery)table:  (ok)-Moto_conducteur avec donnes
