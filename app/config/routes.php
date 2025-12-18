@@ -268,4 +268,39 @@ $router->group('', function(Router $router) use ($app) {
         }
     });
 
+    // Page UI pour supprimer toutes les courses (code confirmation requis)
+    $router->get('/ui/delete-all', function() use ($app) {
+        $app->render('delete_all');
+    });
+
+    // API : suppression de toutes les courses (POST) — code requis "1234"
+    $router->post('/courses/delete-all', function() {
+        $data = Flight::request()->data;
+        $code = trim((string)($data['code'] ?? ''));
+
+        if ($code !== '1234') {
+            Flight::json(['success' => false, 'message' => 'Code de confirmation invalide'], 403);
+            return;
+        }
+
+        $db = Flight::db();
+        try {
+            // supprimer toutes les entrées
+            $stmt = $db->prepare("DELETE FROM Moto_courses");
+            $stmt->execute();
+            $deleted = $stmt->rowCount();
+
+            // optionnel : reset auto_increment si nécessaire
+            try {
+                $db->query("ALTER TABLE Moto_courses AUTO_INCREMENT = 1");
+            } catch (Exception $_) {
+                // ignore si non supporté
+            }
+
+            Flight::json(['success' => true, 'deleted' => $deleted, 'message' => 'Toutes les courses ont été supprimées.']);
+        } catch (Exception $e) {
+            Flight::json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    });
+
 }, [ SecurityHeadersMiddleware::class ]);

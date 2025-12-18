@@ -76,8 +76,8 @@ body{
 .negative{color:var(--danger);font-weight:700}
 
 /* Actions button: ensure they wrap and don't overlap */
-.action-btn{padding:8px 12px;border-radius:8px;border:0;color:#fff;cursor:pointer;font-weight:600;min-width:90px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:6px;box-sizing:border-box}
-.action-btn.validate{background:var(--success);margin-right:6px}
+.action-btn{padding:8px 12px;border-radius:8px;border:0;color:#fff;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.action-btn.validate{background:var(--success)}
 .action-btn.view{background:#06b6d4}
 .action-btn.danger{background:var(--danger)}
 
@@ -173,3 +173,20 @@ body{
         grid-template-columns: 1fr;
     }
 }
+
+/* Remove any floating action leftovers (ensure no unexpected fixed buttons) */
+#floating-actions{display:none !important}
+
+/* Navigation links (alignées à droite dans le header) */
+.nav-links{display:flex;gap:8px;align-items:center}
+.nav-links .links{
+  display:inline-block;
+  padding:8px 10px;
+  border-radius:8px;
+  text-decoration:none;
+  color:inherit;
+  background:transparent;
+  font-weight:600;
+}
+.nav-links .links[style*="background:#ff9f1c"]{color:#fff}
+.nav-links .action-btn{margin:0;padding:8px 12px;min-width:90px;border-radius:8px}

@@ -110,5 +110,24 @@ function testAPI() {
         }
     }
     </script>
+    
+    <!-- quick access floating buttons -->
+    <style>
+        #floating-actions {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 9999;
+        }
+        
+        #floating-actions a {
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+    <div id="floating-actions">
+        <a href="/ui/delete-all" class="action-btn danger">Supprimer toutes les courses</a>
+        <a href="/" class="action-btn view">Accueil</a>
+    </div>
 </body>
 </html>

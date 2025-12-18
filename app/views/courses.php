@@ -15,6 +15,8 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
     /* petit style local pour table d'erreurs */
     #statusLine{margin-top:10px;color:#a00;font-weight:600}
     #coursesTable td .small-cell{display:block;color:#6b7280;font-size:13px}
+    /* quick access floating buttons */
+    #floating-actions{position:fixed;right:18px;bottom:18px;z-index:9999}#floating-actions a{display:block;margin-bottom:8px}
   </style>
 </head>
 <body>
@@ -22,11 +24,14 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
     <div class="header">
       <div>
         <h1 class="title">Nouvelle course +</h1>
-        <div class="small">Créer une course et voir la liste. Annuler supprime si non validée.</div>
+        <div class="small">Créer une course et voir la liste.</div>
       </div>
-      <div>
-        <a href="/" class="links">← Retour accueil</a>
-        <a href="/dashboard" class="links" style="margin-left:8px">Tableau</a>
+
+      <div class="nav-links">
+        <a href="/" class="links">Accueil</a>
+        <a href="/dashboard" class="links">Tableau</a>
+        <a href="/ui/prix-essence" class="links" style="background:#ff9f1c">Prix essence</a>
+        <a href="/ui/delete-all" class="action-btn danger">Supprimer toutes</a>
       </div>
     </div>
 
@@ -67,6 +72,13 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
         <tbody></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- quick access floating buttons -->
+  <div id="floating-actions">
+    <a href="/ui/delete-all" class="action-btn danger">Supprimer toutes les courses</a>
+    <a href="/ui/prix-essence" class="action-btn" style="background:#ff9f1c">Prix essence</a>
+    <a href="/" class="action-btn view">Accueil</a>
   </div>
 
   <script>

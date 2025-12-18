@@ -32,12 +32,15 @@ $course = isset($course) ? $course : null;
   <div class="container">
     <div class="header">
       <div>
-        <div class="title">Prix essence — Course #<?= e($id) ?></div>
-        <div class="small">Définir un prix local pour le carburant appliqué à cette course</div>
+        <div class="title">Prix essence — Course #<?= htmlspecialchars($id, ENT_QUOTES) ?></div>
+        <div class="small">Définir un prix local pour cette course</div>
       </div>
-      <div>
-        <a href="/" class="links">← Retour accueil</a>
-        <a href="/dashboard" class="links" style="margin-left:8px">Tableau</a>
+
+      <div class="nav-links" style="display:flex;gap:8px;align-items:center">
+        <a href="/" class="links">Accueil</a>
+        <a href="/dashboard" class="links">Tableau</a>
+        <a href="/ui/prix-essence" class="links" style="background:#ff9f1c;color:#fff;border-radius:8px;padding:8px 10px;text-decoration:none">Prix global</a>
+        <a href="/ui/delete-all" class="action-btn danger" style="margin-left:6px">Supprimer toutes</a>
       </div>
     </div>
 
@@ -69,6 +72,14 @@ $course = isset($course) ? $course : null;
       </div>
     </div>
   </div>
+
+<!-- quick access floating buttons -->
+<style>#floating-actions{position:fixed;right:18px;bottom:18px;z-index:9999}#floating-actions a{display:block;margin-bottom:8px}</style>
+<div id="floating-actions">
+  <a href="/ui/delete-all" class="action-btn danger">Supprimer toutes les courses</a>
+  <a href="/ui/prix-essence" class="action-btn" style="background:#ff9f1c">Prix essence</a>
+  <a href="/" class="action-btn view">Accueil</a>
+</div>
 
 <script>
 document.getElementById('prixForm').addEventListener('submit', async function(e){

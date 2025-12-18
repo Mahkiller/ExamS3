@@ -23,12 +23,15 @@ function e($v){
   <div class="container">
     <div class="header">
       <div>
-        <div class="title">Modifier la course #<?= e($id) ?></div>
+        <div class="title">Modifier la course #<?= htmlspecialchars($id, ENT_QUOTES) ?></div>
         <div class="small">Modifiez les informations de la course</div>
       </div>
-      <div class="links">
-        <a href="/ui/courses">← Retour à la liste</a>
-        <a href="/" style="margin-left:8px" class="links">Accueil</a>
+
+      <div class="nav-links" style="display:flex;gap:8px;align-items:center">
+        <a href="/ui/courses" class="links">← Retour liste</a>
+        <a href="/" class="links">Accueil</a>
+        <a href="/ui/prix-essence" class="links" style="background:#ff9f1c;color:#fff;border-radius:8px;padding:8px 10px;text-decoration:none">Prix essence</a>
+        <a href="/ui/delete-all" class="action-btn danger" style="margin-left:6px">Supprimer toutes</a>
       </div>
     </div>
     
@@ -94,6 +97,14 @@ function e($v){
       </form>
     </div>
   </div>
+
+  <!-- quick access floating buttons -->
+<style>#floating-actions{position:fixed;right:18px;bottom:18px;z-index:9999}#floating-actions a{display:block;margin-bottom:8px}</style>
+<div id="floating-actions">
+  <a href="/ui/delete-all" class="action-btn danger">Supprimer toutes les courses</a>
+  <a href="/ui/prix-essence" class="action-btn" style="background:#ff9f1c">Prix essence</a>
+  <a href="/" class="action-btn view">Accueil</a>
+</div>
 
   <script>
     const id = <?= json_encode($id) ?>;

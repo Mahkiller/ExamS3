@@ -175,11 +175,16 @@ uksort($dates, function($a,$b){
 <div class="container">
   <div class="header">
     <div>
-      <div class="title">Tableau financier - Coopérative Moto</div>
+      <div class="title">Tableau financier</div>
+      <div class="small"><?= isset($message) ? htmlspecialchars($message, ENT_QUOTES) : '' ?></div>
     </div>
-    <div class="links">
-      <a href="/ui/courses">Gestion des courses</a>
-      <a href="/ui/course/1" style="background:#06b6d4">Modifier une course</a>
+
+    <div class="nav-links">
+      <a href="/" class="links">Accueil</a>
+      <a href="/dashboard" class="links">Tableau</a>
+      <a href="/ui/courses" class="links">Courses</a>
+      <a href="/ui/prix-essence" class="links" style="background:#ff9f1c">Prix essence</a>
+      <a href="/ui/delete-all" class="action-btn danger">Supprimer toutes</a>
     </div>
   </div>
 
@@ -370,6 +375,14 @@ uksort($dates, function($a,$b){
       <?php endforeach; ?>
     <?php endif; ?>
   </div>
+</div>
+
+<!-- quick access floating buttons -->
+<style>#floating-actions{position:fixed;right:18px;bottom:18px;z-index:9999}#floating-actions a{display:block;margin-bottom:8px}</style>
+<div id="floating-actions">
+  <a href="/ui/delete-all" class="action-btn danger">Supprimer toutes les courses</a>
+  <a href="/ui/prix-essence" class="action-btn" style="background:#ff9f1c">Prix essence</a>
+  <a href="/" class="action-btn view">Accueil</a>
 </div>
 
 <script>
