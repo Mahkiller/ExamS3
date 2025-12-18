@@ -29,53 +29,29 @@ use flight\database\PdoWrapper;
 
 $ds = DIRECTORY_SEPARATOR;
 
-/*
- * This file is the equivalent of a typical bootstrap file. A bootstrap files 
- * job is to make sure that all the required services, plugins, connections, etc. 
- * are loaded and ready to go for every request made to the application.
- */
-
-// First autoload composer
 require(__DIR__ . $ds . '..' . $ds . 'vendor' . $ds . 'autoload.php');
-// alternatively, adjust path if you downloaded Flight as zip
 
-/*
- * Load the config file
- */
 $config_file_path = __DIR__. $ds . '..' . $ds . 'app/config/config.php';
 if(file_exists($config_file_path) === false) {
     Flight::halt(500, 'Config file not found. Please create a config.php file in the app/config directory to get started.');
 }
 $config = require($config_file_path);
 
-/*
- * Register database service
- */
 $dsn = 'mysql:host=' . $config['database']['host'] . ';dbname=' . $config['database']['dbname'] . ';charset=utf8mb4';
 Flight::register('db', PdoWrapper::class, [ $dsn, $config['database']['user'], $config['database']['password'] ]);
 
-/*
- * Homepage route → utilise la vue welcome.php
- */
 Flight::route('GET /', function() {
     $message = 'Bienvenue dans l’application Coopérative Moto!';
     Flight::render('welcome', ['message' => $message]);
 });
 
-/*
- * Example route with parameter
- */
 Flight::route('GET /hello-world/@name', function($name) {
     $message = "Hello world! Oh hey $name!";
     Flight::render('welcome', ['message' => $message]);
 });
 
-/*
- * Group routes for Moto Courses CRUD
- */
 Flight::group('/courses', function() {
 
-    // List all courses
     Flight::route('GET /', function() {
         $db = Flight::db();
         $courses = $db->query("SELECT c.id, c.date_course, c.km, c.montant, c.depart, c.arrivee, c.valide,
@@ -87,7 +63,6 @@ Flight::group('/courses', function() {
         Flight::json($courses, 200, true, 'utf-8', JSON_PRETTY_PRINT);
     });
 
-    // Create a new course
     Flight::route('POST /create', function() {
         $data = Flight::request()->data;
         $db = Flight::db();
@@ -109,14 +84,12 @@ Flight::group('/courses', function() {
         Flight::json(['success' => true], 200);
     });
 
-    // Validate a course (mark as non-editable)
     Flight::route('POST /validate/@id:[0-9]+', function($id) {
         $db = Flight::db();
         $db->run("UPDATE Moto_courses SET valide = 1 WHERE id = ?", [ $id ]);
         Flight::json(['success' => true], 200);
     });
 
-    // Delete a course (optional)
     Flight::route('DELETE /delete/@id:[0-9]+', function($id) {
         $db = Flight::db();
         $db->run("DELETE FROM Moto_courses WHERE id = ?", [ $id ]);
@@ -125,14 +98,4 @@ Flight::group('/courses', function() {
 
 });
 
-/*
- * Start the Flight application
- */
 Flight::start();
-
-/*
- .----..---.  .--.  .----.  .---.     .---. .-. .-.  .--.  .---.    .----. .-. .-..----. .----..-.  .-.
-{ {__ {_   _}/ {} \ | {}  }{_   _}   {_   _}| {_} | / {} \{_   _}   | {}  }| { } || {}  }| {}  }\ \/ / 
-.-._} } | | /  /\  \| .-. \  | |       | |  | { } |/  /\  \ | |     | .--' | {_} || .--' | .--'  }  {  
-`----'  `-' `-'  `-'`-' `-'  `-'       `-'  `-' `-'`-'  `-' `-'     `-'    `-----'`-'    `-'     `--'  
-*/

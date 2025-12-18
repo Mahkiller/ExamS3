@@ -1,8 +1,6 @@
 <?php
-// Page UI pour modifier le prix de l'essence d'une course
 if (!class_exists('Flight')) { echo 'Flight non disponible.'; exit; }
 
-// Définitions utilitaires manquantes (corrige l'erreur "Call to undefined function e()")
 if (!function_exists('e')) {
     function e($v){
         return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');

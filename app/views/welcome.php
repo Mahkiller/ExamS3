@@ -1,5 +1,4 @@
 <?php
-// Tableau financier amélioré avec filtres.
 if (!class_exists('Flight')) {
     echo 'Flight non disponible.';
     exit;
@@ -12,22 +11,17 @@ $error = null;
 $totals = ['recette'=>0.0,'salaire'=>0.0,'entretien'=>0.0,'depense'=>0.0,'benefice'=>0.0];
 $dates = [];
 
-// Récupérer les filtres depuis GET
 $date_debut = $_GET['date_debut'] ?? '';
 $date_fin = $_GET['date_fin'] ?? '';
 $moto_id = $_GET['moto_id'] ?? '';
 $conducteur_id = $_GET['conducteur_id'] ?? '';
 $client_id = $_GET['client_id'] ?? '';
 
-// Récupérer les listes pour les filtres
 try {
-    // Liste des motos pour le filtre
     $motos_list = $db->query('SELECT id, immatriculation FROM Moto_motos ORDER BY immatriculation')->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Liste des conducteurs pour le filtre
+
     $conducteurs_list = $db->query('SELECT id, nom FROM Moto_conducteurs ORDER BY nom')->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Liste des clients pour le filtre
+
     $clients_list = $db->query('SELECT id, nom FROM Moto_clients ORDER BY nom')->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $motos_list = [];
@@ -36,7 +30,6 @@ try {
 }
 
 try {
-    // Construction de la requête avec filtres
     $sql = "
         SELECT
             c.id,
@@ -65,32 +58,27 @@ try {
     ";
     
     $params = [];
-    
-    // Filtre par date de début
+
     if (!empty($date_debut)) {
         $sql .= " AND c.date_course >= ?";
         $params[] = $date_debut;
     }
-    
-    // Filtre par date de fin
+
     if (!empty($date_fin)) {
         $sql .= " AND c.date_course <= ?";
         $params[] = $date_fin;
     }
-    
-    // Filtre par moto
+
     if (!empty($moto_id) && is_numeric($moto_id)) {
         $sql .= " AND c.moto_id = ?";
         $params[] = (int)$moto_id;
     }
-    
-    // Filtre par conducteur
+
     if (!empty($conducteur_id) && is_numeric($conducteur_id)) {
         $sql .= " AND c.conducteur_id = ?";
         $params[] = (int)$conducteur_id;
     }
-    
-    // Filtre par client
+
     if (!empty($client_id) && is_numeric($client_id)) {
         $sql .= " AND c.client_id = ?";
         $params[] = (int)$client_id;
@@ -107,7 +95,6 @@ try {
     
     $courses = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-    // Réinitialiser les totaux
     $totals = ['recette'=>0.0,'salaire'=>0.0,'entretien'=>0.0,'depense'=>0.0,'benefice'=>0.0];
     $dates = [];
 
@@ -360,10 +347,8 @@ uksort($dates, function($a,$b){
                       <button class="action-btn validate" onclick="validateCourse(<?= $r['id'] ?>)">Valider</button>
                       <button class="action-btn danger" onclick="cancelCourse(<?= $r['id'] ?>)">Annuler</button>
                       <a class="action-btn view" href="/ui/course/<?= $r['id'] ?>">Modifier</a>
-                      <!-- nouveau : accès page modifier le prix de l'essence -->
                       <a class="action-btn" href="/ui/course-price/<?= $r['id'] ?>" style="background:#ff9f1c">Prix essence</a>
                     <?php else: ?>
-                      <!-- course validée : actions limitées -->
                       <span class="small">Course validée</span>
                     <?php endif; ?>
                   </td>
@@ -386,7 +371,6 @@ uksort($dates, function($a,$b){
 </div>
 
 <script>
-// Gestion des sections collapsibles
 document.querySelectorAll('.collapsible').forEach(btn => {
   btn.addEventListener('click', () => {
     const id = btn.getAttribute('data-target');
@@ -397,7 +381,6 @@ document.querySelectorAll('.collapsible').forEach(btn => {
   });
 });
 
-// Tests API
 async function testUrl(u) {
   try {
     const res = await fetch(u, { method: 'GET' });
@@ -419,7 +402,6 @@ document.getElementById('testCourseBtn').addEventListener('click', async () => {
   document.getElementById('testOutput').textContent = '/courses/1 → ' + r;
 });
 
-// Validation d'une course
 async function validateCourse(id) {
   if (!confirm('Valider la course ? (une fois validée, elle ne sera plus modifiable)')) return;
   try {
@@ -445,7 +427,6 @@ async function validateCourse(id) {
 async function cancelCourse(id){
   if(!confirm('Annuler (supprimer) cette course ?')) return;
   try {
-    // Utiliser POST pour compatibilité serveur
     const res = await fetch(`/courses/delete/${id}`, { method: 'POST' });
     if (!res.ok) {
       const err = await res.json().catch(()=>({message:'Erreur serveur'}));
