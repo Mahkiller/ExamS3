@@ -1,6 +1,5 @@
 <?php
-// Vue pour modifier une course
-if (!class_exists('Flight')) { 
+if (!class_exists('Flight')) {
     echo 'Flight non disponible.'; 
     exit; 
 }
@@ -118,9 +117,8 @@ function e($v){
           throw new Error(msg);
         }
 
-        const c = j.data; // <-- use the payload returned by the API
+        const c = j.data;
 
-        // Remplir le formulaire
         form.elements['date_course'].value = c.date_course || '';
         form.elements['heure_debut'].value = c.heure_debut || '';
         form.elements['heure_fin'].value = c.heure_fin || '';
@@ -182,7 +180,6 @@ function e($v){
       }
     });
 
-    // Charger les données au démarrage
     load();
   </script>
 </body>

@@ -1,6 +1,5 @@
 <?php
 
-// Page d'accueil simple — choix entre tableau financier et création de course
 if (!class_exists('Flight')) { echo 'Flight non disponible.'; exit; }
 function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 ?>

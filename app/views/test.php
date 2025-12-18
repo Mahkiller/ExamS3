@@ -1,5 +1,4 @@
 <?php
-// Test direct de l'API
 if (!class_exists('Flight')) {
     echo 'Flight non disponible.';
     exit;
@@ -8,25 +7,21 @@ if (!class_exists('Flight')) {
 function testAPI() {
     try {
         $db = Flight::db();
-        
-        // Test 1: Vérifier la connexion
+
         echo "<h3>1. Test connexion DB</h3>";
         $db->query("SELECT 1");
         echo "✓ Connexion OK<br>";
-        
-        // Test 2: Vérifier les tables
+
         echo "<h3>2. Tables disponibles</h3>";
         $tables = $db->query("SHOW TABLES LIKE 'Moto_%'")->fetchAll(PDO::FETCH_COLUMN);
         foreach ($tables as $table) {
             echo "✓ $table<br>";
         }
-        
-        // Test 3: Compter les courses
+
         echo "<h3>3. Courses en base</h3>";
         $count = $db->query("SELECT COUNT(*) as count FROM Moto_courses")->fetch(PDO::FETCH_ASSOC);
         echo "✓ " . $count['count'] . " courses<br>";
-        
-        // Test 4: Créer une course (test direct SQL)
+
         echo "<h3>4. Test création SQL directe</h3>";
         $sql = "INSERT INTO Moto_courses 
                 (date_course, heure_debut, heure_fin, km, montant, depart, arrivee, 
@@ -50,8 +45,7 @@ function testAPI() {
         if ($result) {
             $id = $db->lastInsertId();
             echo "✓ Course créée avec ID: $id<br>";
-            
-            // Afficher la nouvelle course
+
             $newCourse = $db->query("SELECT * FROM Moto_courses WHERE id = $id")->fetch(PDO::FETCH_ASSOC);
             echo "<pre>" . print_r($newCourse, true) . "</pre>";
         } else {

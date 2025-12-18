@@ -4,24 +4,16 @@ use flight\Engine;
 use flight\net\Router;
 use app\middlewares\SecurityHeadersMiddleware;
 
-/**
- * @var Router $router
- * @var Engine $app
- */
-
 $router->group('', function(Router $router) use ($app) {
 
-    // Page d'accueil (choix)
     $router->get('/', function() use ($app) {
         $app->render('index');
     });
 
-    // Dashboard (tableau financier)
     $router->get('/dashboard', function() use ($app) {
         $app->render('welcome');
     });
 
-    // UI pages
     $router->get('/ui/courses', function() use ($app) {
         $app->render('courses');
     });
@@ -31,7 +23,6 @@ $router->group('', function(Router $router) use ($app) {
     });
 
     $router->get('/ui/course-price/@id', function($id) use ($app) {
-        // render page for editing course fuel price
         $db = Flight::db();
         $stmt = $db->prepare("SELECT * FROM Moto_courses WHERE id = ?");
         $stmt->execute([(int)$id]);
@@ -43,7 +34,6 @@ $router->group('', function(Router $router) use ($app) {
         ]);
     });
 
-    // UI page: modifier prix global essence
     $router->get('/ui/prix-essence', function() use ($app) {
         $db = Flight::db();
         $param = $db->query("SELECT * FROM Moto_parametres WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
@@ -51,7 +41,6 @@ $router->group('', function(Router $router) use ($app) {
     });
 
 
-    // replace or ensure this handler exists (GET /courses)
     $router->get('/courses', function() {
         try {
             $db = Flight::db();
@@ -71,7 +60,6 @@ $router->group('', function(Router $router) use ($app) {
             $stmt = $db->query($sql);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-            // calculs financiers par course
             foreach ($rows as &$r) {
                 $montant = (float)($r['montant'] ?? 0);
                 $salaire_pct = (float)($r['salaire_pourcentage'] ?? 0);
@@ -134,7 +122,6 @@ $router->group('', function(Router $router) use ($app) {
                 $data['arrivee'] ?? null
             ]);
 
-            // try to obtain last insert id in a robust way
             $insertId = null;
             if (is_callable([$db, 'lastInsertId'])) {
                 $insertId = $db->lastInsertId();
@@ -202,7 +189,6 @@ $router->group('', function(Router $router) use ($app) {
         }
     });
 
-    // compatibility: also accept POST for delete (some clients/servers)
     $router->post('/courses/delete/@id', function($id) {
         $db = Flight::db();
         try {
@@ -246,7 +232,6 @@ $router->group('', function(Router $router) use ($app) {
         }
     });
 
-    // parametres prix global
     $router->post('/parametres/prix-essence', function() {
         $data = Flight::request()->data;
         $prix = trim((string)($data['prix'] ?? ''));

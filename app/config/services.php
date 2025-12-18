@@ -15,14 +15,10 @@ use Tracy\Debugger;
  * @var array  $config  From config.php
  * @var Engine $app     FlightPHP app instance
  **********************************************/
+ 
+ ob_start();
 
-// Ensure no accidental output before Tracy
-ob_start();
-
-/*********************************************
- *           Tracy Debugger Setup            *
- *********************************************/
-$ds = DIRECTORY_SEPARATOR; // Define DS for paths
+$ds = DIRECTORY_SEPARATOR;
 Debugger::enable(); // Auto-detects environment
 Debugger::$logDirectory = __DIR__ . $ds . '..' . $ds . 'log';
 Debugger::$strictMode = true;
@@ -31,10 +27,6 @@ if (Debugger::$showBar === true && php_sapi_name() !== 'cli') {
     (new TracyExtensionLoader($app));
 }
 
-/**********************************************
- *           Database Service Setup           *
- **********************************************/
-// MySQL connection
 $dsn = 'mysql:host=' . $config['database']['host'] . ';dbname=' . $config['database']['dbname'] . ';charset=utf8mb4';
 $pdoClass = Debugger::$showBar === true ? PdoQueryCapture::class : PdoWrapper::class;
 $app->register('db', $pdoClass, [
@@ -43,5 +35,4 @@ $app->register('db', $pdoClass, [
     $config['database']['password'] ?? null
 ]);
 
-// Flush buffer after all setup
 ob_end_clean();

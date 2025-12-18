@@ -1,5 +1,4 @@
 <?php
-// Vue UI pour créer et lister des courses — JS plus robuste pour afficher les courses existantes.
 if (!class_exists('Flight')) { echo 'Flight non disponible.'; exit; }
 function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 ?>
@@ -12,7 +11,6 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
   <link rel="stylesheet" href="/assets/welcome.css">
   <link rel="stylesheet" href="/assets/courses.css">
   <style>
-    /* petit style local pour table d'erreurs */
     #statusLine{margin-top:10px;color:#a00;font-weight:600}
     #coursesTable td .small-cell{display:block;color:#6b7280;font-size:13px}
   </style>
@@ -139,7 +137,6 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
         document.getElementById('createMsg').textContent = 'Annulé.';
       });
 
-      // expose global actions used in table rows
       window.validate = async function(id){
         if(!confirm('Valider la course ? (une fois validée, non modifiable)')) return;
         try {
@@ -151,7 +148,6 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
       window.cancel = async function(id){
         if(!confirm('Annuler (supprimer) cette course ?')) return;
         try {
-          // Utiliser POST pour compatibilité serveur (route POST /courses/delete/@id ajoutée)
           const res = await fetch(`/courses/delete/${id}`, { method: 'POST' });
           if (!res.ok) throw new Error('Erreur serveur');
           await loadCourses();
