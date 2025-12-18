@@ -1,12 +1,37 @@
 Page 1: 
-        (Lucas)Total des Recettes, Depenses, Benefice
-                -Date
-                -Recette
-                -Depense
-                -Benefice
+(ok)     (Lucas)Total des Recettes, Depenses, Benefice:
+                (ok)-Date
+                (ok)-Recette
+                (ok)-Depense
+                (ok)-Benefice
 
         BDD: mysql
 (ok)    (Mahery)table:  (ok)-Moto_conducteur avec donnes
                         (ok)-Moto_motos avec donnes
                         (ok)-Moto_courses avec donnes
                         (ok)-Moto_parametres avec donnes
+
+(ok)    (Mahery)Mettre les données suivantes dans votre base 
+                        (ok)-10 motos 
+                        (ok)-4 motos à 2 litres / 100 et 10% cout entretien 
+                        (ok)-2 motos à 1,6 litres /100 et 15% coût entretien 
+                        (ok)-4 motos à 1,3 litres au / 100 et 11,5% coût entretien 
+                        (ok)-6 chauffeurs 
+                        (ok)-2 chauffeurs à 15% de salaire 
+                        (ok)-2 chauffeurs à 25% de salaire 
+                        (ok)-2 chauffeurs à 19,5% de salaire 
+
+(en cours)        (Lucas)Créer une page pour modifier le prix de l’essence
+                        (en cours)- Créer un formulaire pour saisir le nouveau prix de l’essence
+                        (en cours)- Mettre à jour le prix de l’essence dans la base de données
+
+
+        (Lucas)Ajouter un menu special pour effacer toutes les courses (même validé) 
+                        - mettre une confirmation par code (1234) avant d’effacer.  
+        
+        dans la page contenant les colonnes  
+                        date  
+                        recette (montant)
+                        dépense ( salaire + entretien) 
+                        bénéfice 
+                        Mettre une filtre date_debut et date_fin
