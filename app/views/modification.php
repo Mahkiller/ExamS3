@@ -1,8 +1,14 @@
 <?php
-// Vue pour modifier une course (reçoit $id passé par le routeur)
-if (!class_exists('Flight')) { echo 'Flight non disponible.'; exit; }
+// Vue pour modifier une course
+if (!class_exists('Flight')) { 
+    echo 'Flight non disponible.'; 
+    exit; 
+}
+
 $id = isset($id) ? (int)$id : 0;
-function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
+function e($v){ 
+    return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); 
+}
 ?>
 <!doctype html>
 <html lang="fr">
@@ -13,30 +19,75 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
   <link rel="stylesheet" href="/assets/welcome.css">
 </head>
 <body>
-  <div class="wrap">
-    <h1>Modifier la course #<?= e($id) ?></h1>
-    <div class="card" id="card">
-      <div id="status" class="small" style="display:none"></div>
-      <form id="editForm" style="display:block">
-        <label>Date <input name="date_course" type="date" required /></label>
-        <div class="row">
-          <label>Heure début <input name="heure_debut" type="time" /></label>
-          <label>Heure fin <input name="heure_fin" type="time" /></label>
+  <div class="container">
+    <div class="header">
+      <div>
+        <div class="title">Modifier la course #<?= e($id) ?></div>
+        <div class="small">Modifiez les informations de la course</div>
+      </div>
+      <div class="links">
+        <a href="/ui/courses">← Retour à la liste</a>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div id="status" class="small" style="margin-bottom: 15px;"></div>
+      <form id="editForm">
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: bold;">Date</label>
+          <input name="date_course" type="date" required style="padding: 8px; width: 200px;" />
         </div>
-        <div class="row">
-          <label>KM <input name="km" type="number" step="0.01" required /></label>
-          <label>Montant <input name="montant" type="number" step="0.01" required /></label>
+        
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+          <div>
+            <label style="display: block; margin-bottom: 5px;">Heure début</label>
+            <input name="heure_debut" type="time" style="padding: 8px;" />
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 5px;">Heure fin</label>
+            <input name="heure_fin" type="time" style="padding: 8px;" />
+          </div>
         </div>
-        <label>Départ <input name="depart" /></label>
-        <label>Arrivée <input name="arrivee" /></label>
-        <div class="row">
-          <label>Conducteur ID <input name="conducteur_id" type="number" required /></label>
-          <label>Moto ID <input name="moto_id" type="number" required /></label>
+        
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+          <div>
+            <label style="display: block; margin-bottom: 5px;">KM</label>
+            <input name="km" type="number" step="0.01" required style="padding: 8px; width: 100px;" />
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 5px;">Montant (Ar)</label>
+            <input name="montant" type="number" step="0.01" required style="padding: 8px; width: 150px;" />
+          </div>
         </div>
-        <label>Client ID <input name="client_id" type="number" /></label>
-        <div style="margin-top:12px">
-          <button class="btn primary" type="submit">Enregistrer</button>
-          <a class="btn ghost" href="/ui/courses" style="text-decoration:none;margin-left:8px">Retour</a>
+        
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px;">Départ</label>
+          <input name="depart" style="padding: 8px; width: 100%;" />
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px;">Arrivée</label>
+          <input name="arrivee" style="padding: 8px; width: 100%;" />
+        </div>
+        
+        <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+          <div>
+            <label style="display: block; margin-bottom: 5px;">Conducteur ID</label>
+            <input name="conducteur_id" type="number" required style="padding: 8px; width: 120px;" />
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 5px;">Moto ID</label>
+            <input name="moto_id" type="number" required style="padding: 8px; width: 120px;" />
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 5px;">Client ID (optionnel)</label>
+            <input name="client_id" type="number" style="padding: 8px; width: 120px;" />
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+          <button class="action-btn" type="submit" style="background: #0f62fe;">Enregistrer</button>
+          <a class="action-btn" href="/ui/courses" style="background: #6b7280; text-decoration: none;">Annuler</a>
         </div>
       </form>
     </div>
@@ -47,14 +98,21 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
     const status = document.getElementById('status');
     const form = document.getElementById('editForm');
 
-    async function load(){
-      try{
-        // show minimal busy indicator on form controls instead of a persistent "Chargement..."
-        form.style.opacity = '0.6';
+    async function load() {
+      try {
+        status.textContent = 'Chargement...';
+        status.style.color = '#666';
+        
         const res = await fetch(`/courses/${id}`);
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Erreur de chargement');
+        }
+        
         const c = await res.json();
-        form.elements['date_course'].value = c.date_course || c.date || '';
+        
+        // Remplir le formulaire
+        form.elements['date_course'].value = c.date_course || '';
         form.elements['heure_debut'].value = c.heure_debut || '';
         form.elements['heure_fin'].value = c.heure_fin || '';
         form.elements['km'].value = c.km || '';
@@ -64,37 +122,56 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
         form.elements['conducteur_id'].value = c.conducteur_id || '';
         form.elements['moto_id'].value = c.moto_id || '';
         form.elements['client_id'].value = c.client_id || '';
+        
         if (c.valide == 1) {
-          status.style.display = 'block';
-          status.textContent = 'Course validée — modification interdite.';
+          status.textContent = '⚠️ Cette course est déjà validée — modification interdite.';
+          status.style.color = '#dc2626';
           form.style.display = 'none';
         } else {
-          status.style.display = 'none';
+          status.textContent = '';
           form.style.display = 'block';
         }
-      }catch(err){
-        status.style.display = 'block';
-        status.textContent = 'Erreur chargement: ' + String(err);
+      } catch (err) {
+        status.textContent = '❌ Erreur: ' + err.message;
+        status.style.color = '#dc2626';
         form.style.display = 'none';
-      } finally {
-        form.style.opacity = '1';
       }
     }
 
-    form.addEventListener('submit', async function(e){
+    form.addEventListener('submit', async function(e) {
       e.preventDefault();
-      const data = new URLSearchParams(new FormData(this));
+      
+      const formData = new FormData(this);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Nettoyer les valeurs
+      Object.keys(data).forEach(key => {
+        if (data[key] === '') data[key] = null;
+      });
+      
       try {
-        const res = await fetch(`/courses/update/${id}`, { method: 'POST', body: data });
-        const j = await res.json();
-        if (!res.ok) throw new Error(j.message || 'Erreur');
-        alert('Modifié.');
+        const res = await fetch(`/courses/update/${id}`, { 
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams(data)
+        });
+        
+        const result = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(result.error || 'Erreur de mise à jour');
+        }
+        
+        alert('✅ Course modifiée avec succès !');
         window.location.href = '/ui/courses';
       } catch (err) {
-        alert('Erreur: ' + err.message);
+        alert('❌ Erreur: ' + err.message);
       }
     });
 
+    // Charger les données au démarrage
     load();
   </script>
 </body>
