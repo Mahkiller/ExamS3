@@ -48,7 +48,7 @@ $course = isset($course) ? $course : null;
       </div>
 
       <div style="margin-top:12px">
-        <form id="prixForm">
+        <form id="prixForm" data-id="<?= e($id) ?>">
           <div class="form-row">
             <label for="prix">Prix essence (Ar) :</label>
             <input id="prix" name="prix" type="number" step="0.01" min="0" value="<?= $prix !== null ? e($prix) : '' ?>" required />
@@ -79,40 +79,6 @@ $course = isset($course) ? $course : null;
   <a href="/" class="action-btn view">Accueil</a>
 </div>
 
-<script>
-document.getElementById('prixForm').addEventListener('submit', async function(e){
-  e.preventDefault();
-  const prix = document.getElementById('prix').value;
-  const msg = document.getElementById('msg');
-  msg.textContent = 'Enregistrement...';
-  try {
-    const res = await fetch(`/courses/price/<?= json_encode($id) ?>`, {
-      method: 'POST',
-      body: new URLSearchParams({ prix })
-    });
-    const j = await res.json().catch(()=>null);
-    if (!res.ok) throw new Error((j && j.message) ? j.message : 'Erreur serveur');
-    msg.textContent = 'Prix enregistré.';
-    setTimeout(()=>{ window.location.href = '/dashboard'; }, 700);
-  } catch (err) {
-    msg.textContent = 'Erreur: ' + err.message;
-  }
-});
-
-document.getElementById('resetBtn').addEventListener('click', async function(){
-  if (!confirm('Supprimer le prix local pour cette course ? Le prix global sera utilisé.')) return;
-  const msg = document.getElementById('msg');
-  msg.textContent = 'Suppression...';
-  try {
-    const res = await fetch(`/courses/price/<?= json_encode($id) ?>`, { method: 'DELETE' });
-    const j = await res.json().catch(()=>null);
-    if (!res.ok) throw new Error((j && j.message) ? j.message : 'Erreur serveur');
-    msg.textContent = 'Prix local supprimé.';
-    setTimeout(()=>{ window.location.href = '/dashboard'; }, 600);
-  } catch (err) {
-    msg.textContent = 'Erreur: ' + err.message;
-  }
-});
-</script>
+<script src="/assets/js/course_price.js"></script>
 </body>
 </html>

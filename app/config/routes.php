@@ -4,6 +4,11 @@ use flight\Engine;
 use flight\net\Router;
 use app\middlewares\SecurityHeadersMiddleware;
 
+/**
+ * @var Router $router
+ * @var Engine $app
+ */
+
 $router->group('', function(Router $router) use ($app) {
 
     $router->get('/', function() use ($app) {
@@ -22,15 +27,19 @@ $router->group('', function(Router $router) use ($app) {
         $app->render('modification', ['id' => (int)$id]);
     });
 
+    // UI: page modifier prix local d'une course
     $router->get('/ui/course-price/@id', function($id) use ($app) {
         $db = Flight::db();
-        $stmt = $db->prepare("SELECT * FROM Moto_courses WHERE id = ?");
+        $stmt = $db->prepare("SELECT * FROM Moto_courses WHERE id = ? LIMIT 1");
         $stmt->execute([(int)$id]);
         $course = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        $param = $db->query("SELECT prix_essence FROM Moto_parametres WHERE id = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
         Flight::render('course_price', [
             'id' => (int)$id,
             'course' => $course,
-            'prix' => $course['prix_essence'] ?? null
+            'prix' => $course['prix_essence'] ?? null,
+            'prix_global' => $param['prix_essence'] ?? null
         ]);
     });
 
@@ -200,13 +209,14 @@ $router->group('', function(Router $router) use ($app) {
         }
     });
 
+    // API: définir prix local sur une course
     $router->post('/courses/price/@id', function($id) {
         $data = Flight::request()->data;
         if (!isset($data['prix'])) {
             Flight::json(['success'=>false,'message'=>'paramètre prix manquant'], 400);
             return;
         }
-        $prix = (string)$data['prix'];
+        $prix = trim((string)$data['prix']);
         if ($prix === '' || !is_numeric($prix)) {
             Flight::json(['success'=>false,'message'=>'prix invalide'], 400);
             return;
@@ -221,6 +231,19 @@ $router->group('', function(Router $router) use ($app) {
         }
     });
 
+    // API compatibilité: suppression prix local via POST (certains clients/servers ne gèrent pas DELETE)
+    $router->post('/courses/price/delete/@id', function($id) {
+        $db = Flight::db();
+        try {
+            $stmt = $db->prepare("UPDATE Moto_courses SET prix_essence = NULL WHERE id = ?");
+            $stmt->execute([(int)$id]);
+            Flight::json(['success'=>true,'message'=>'Prix local supprimé']);
+        } catch (Exception $e) {
+            Flight::json(['success'=>false,'message'=>$e->getMessage()], 500);
+        }
+    });
+
+    // keep DELETE route too if clients send DELETE
     $router->delete('/courses/price/@id', function($id) {
         $db = Flight::db();
         try {

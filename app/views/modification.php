@@ -8,6 +8,10 @@ $id = isset($id) ? (int)$id : 0;
 function e($v){ 
     return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); 
 }
+
+$title = 'Modifier la course #' . htmlspecialchars($id, ENT_QUOTES);
+$subtitle = 'Modifiez les informations de la course';
+require __DIR__ . '/partials/header.php';
 ?>
 <!doctype html>
 <html lang="fr">
@@ -20,19 +24,6 @@ function e($v){
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <div>
-        <div class="title">Modifier la course #<?= htmlspecialchars($id, ENT_QUOTES) ?></div>
-        <div class="small">Modifiez les informations de la course</div>
-      </div>
-
-      <div class="nav-links" style="display:flex;gap:8px;align-items:center">
-        <a href="/ui/courses" class="links">← Retour liste</a>
-        <a href="/" class="links">Accueil</a>
-        <a href="/ui/prix-essence" class="links" style="background:#ff9f1c;color:#fff;border-radius:8px;padding:8px 10px;text-decoration:none">Prix essence</a>
-        <a href="/ui/delete-all" class="action-btn danger" style="margin-left:6px">Supprimer toutes</a>
-      </div>
-    </div>
     
     <div class="card">
       <div id="status" class="small" style="margin-bottom: 15px;"></div>
@@ -105,93 +96,10 @@ function e($v){
   <a href="/" class="action-btn view">Accueil</a>
 </div>
 
+  <script src="/assets/js/modification.js"></script>
   <script>
-    const id = <?= json_encode($id) ?>;
-    const status = document.getElementById('status');
-    const form = document.getElementById('editForm');
-
-    async function load() {
-      try {
-        status.textContent = 'Chargement...';
-        status.style.color = '#666';
-
-        const res = await fetch(`/courses/${id}`);
-        const j = await res.json().catch(()=>null);
-
-        if (!res.ok) {
-          const msg = (j && (j.message || j.error)) ? (j.message || j.error) : `${res.status} ${res.statusText}`;
-          throw new Error(msg || 'Erreur de chargement');
-        }
-
-        if (!j || j.success !== true || !j.data) {
-          const msg = j && (j.message || j.error) ? (j.message || j.error) : 'Données introuvables';
-          throw new Error(msg);
-        }
-
-        const c = j.data;
-
-        form.elements['date_course'].value = c.date_course || '';
-        form.elements['heure_debut'].value = c.heure_debut || '';
-        form.elements['heure_fin'].value = c.heure_fin || '';
-        form.elements['km'].value = c.km ?? '';
-        form.elements['montant'].value = c.montant ?? '';
-        form.elements['depart'].value = c.depart || '';
-        form.elements['arrivee'].value = c.arrivee || '';
-        form.elements['conducteur_id'].value = c.conducteur_id ?? '';
-        form.elements['moto_id'].value = c.moto_id ?? '';
-        form.elements['client_id'].value = c.client_id ?? '';
-
-        if (Number(c.valide) === 1) {
-          status.textContent = '⚠️ Cette course est déjà validée — modification interdite.';
-          status.style.color = '#dc2626';
-          form.style.display = 'none';
-        } else {
-          status.textContent = '';
-          form.style.display = 'block';
-        }
-      } catch (err) {
-        status.textContent = '❌ Erreur: ' + err.message;
-        status.style.color = '#dc2626';
-        form.style.display = 'none';
-        console.error(err);
-      }
-    }
-
-    form.addEventListener('submit', async function(e) {
-      e.preventDefault();
-
-      const formData = new FormData(this);
-      const data = Object.fromEntries(formData.entries());
-
-      // Nettoyer les valeurs
-      Object.keys(data).forEach(key => {
-        if (data[key] === '') data[key] = null;
-      });
-
-      try {
-        const res = await fetch(`/courses/update/${id}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams(data)
-        });
-        const result = await res.json().catch(()=>null);
-
-        if (!res.ok || !result || result.success !== true) {
-          const msg = result && (result.message || result.error) ? (result.message || result.error) : `${res.status} ${res.statusText}`;
-          throw new Error(msg || 'Erreur de mise à jour');
-        }
-
-        alert('✅ Course modifiée avec succès !');
-        window.location.href = '/ui/courses';
-      } catch (err) {
-        alert('❌ Erreur: ' + err.message);
-        console.error(err);
-      }
-    });
-
-    load();
+    modification.load(<?= json_encode($id) ?>, document.getElementById('editForm'), document.getElementById('status'));
+    modification.bindSubmit(<?= json_encode($id) ?>, document.getElementById('editForm'));
   </script>
 </body>
 </html>
