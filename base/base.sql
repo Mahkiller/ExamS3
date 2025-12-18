@@ -1,13 +1,11 @@
 CREATE DATABASE IF NOT EXISTS Moto;
 USE Moto;
 
-
 CREATE TABLE IF NOT EXISTS Moto_conducteurs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nom VARCHAR(100) NOT NULL,
     salaire_pourcentage DECIMAL(5,2) NOT NULL
 );
-
 
 INSERT INTO Moto_conducteurs (nom, salaire_pourcentage) VALUES
 ('Koto', 15.00),
@@ -16,7 +14,6 @@ INSERT INTO Moto_conducteurs (nom, salaire_pourcentage) VALUES
 ('Rija', 25.00),
 ('Hery', 19.50),
 ('Sitraka', 19.50);
-
 
 CREATE TABLE IF NOT EXISTS Moto_motos (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -37,7 +34,6 @@ INSERT INTO Moto_motos (immatriculation, consommation_litre_100km, entretien_pou
 ('1121-TAI', 1.30, 11.50),
 ('3141-TAJ', 1.30, 11.50);
 
-
 CREATE TABLE IF NOT EXISTS Moto_clients (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nom VARCHAR(150) NOT NULL,
@@ -50,7 +46,6 @@ INSERT INTO Moto_clients (nom, telephone, email) VALUES
 ('Tsinjo', '0341234567', 'tsinjo@gmail.com'),
 ('Mahery', '0349876543', 'mahery@gmail.com'),
 ('Lucas', '0335554444', 'lucas@gmail.com');
-
 
 CREATE TABLE IF NOT EXISTS Moto_affectations (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -71,6 +66,22 @@ INSERT INTO Moto_affectations (conducteur_id, moto_id, date_affectation) VALUES
 (5,5,'2025-12-05'),
 (6,6,'2025-12-06');
 
+CREATE TABLE IF NOT EXISTS Moto_parametres (
+    id INT PRIMARY KEY,
+    prix_essence DECIMAL(8,2) NOT NULL
+);
+
+INSERT INTO Moto_parametres (id, prix_essence) VALUES
+(1, 5200.00);
+
+CREATE TABLE IF NOT EXISTS Moto_prix_essence_historique (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date_modification DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    prix_essence DECIMAL(8,2) NOT NULL
+);
+
+INSERT INTO Moto_prix_essence_historique (prix_essence)
+SELECT prix_essence FROM Moto_parametres;
 
 CREATE TABLE IF NOT EXISTS Moto_courses (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -85,30 +96,33 @@ CREATE TABLE IF NOT EXISTS Moto_courses (
     depart VARCHAR(100),
     arrivee VARCHAR(100),
     valide TINYINT(1) DEFAULT 0,
-    prix_essence DECIMAL(8,2) DEFAULT NULL,
+    prix_essence DECIMAL(8,2) NOT NULL,
     FOREIGN KEY (conducteur_id) REFERENCES Moto_conducteurs(id),
     FOREIGN KEY (moto_id) REFERENCES Moto_motos(id),
     FOREIGN KEY (client_id) REFERENCES Moto_clients(id)
 );
 
-INSERT INTO Moto_courses (
-    conducteur_id, moto_id, client_id, date_course, heure_debut, heure_fin,
-    km, montant, depart, arrivee, valide
-) VALUES
+DELIMITER $$
+CREATE TRIGGER before_insert_course
+BEFORE INSERT ON Moto_courses
+FOR EACH ROW
+BEGIN
+    SET NEW.prix_essence = (SELECT prix_essence FROM Moto_parametres WHERE id = 1);
+END$$
+DELIMITER ;
+
+INSERT INTO Moto_courses (conducteur_id, moto_id, client_id, date_course, heure_debut, heure_fin, km, montant, depart, arrivee, valide)
+VALUES
 (1, 1, 1, '2025-12-01', '08:00:00', '09:15:00', 25.5, 15000, 'Analakely', 'Anosy', 0),
 (2, 2, 2, '2025-12-02', '10:30:00', '11:10:00', 18.2, 12000, 'Isotry', 'Ivandry', 1),
 (3, 3, 3, '2025-12-03', '14:00:00', '15:45:00', 40.0, 25000, '67Ha', 'Ambohimanarina', 1),
 (4, 4, 1, '2025-12-04', '09:00:00', '09:50:00', 22.0, 14000, 'Ankorondrano', 'Ambanidia', 0),
-(5, 5, 2, '2025-12-05', '16:00:00', '17:30:00', 35.8, 22000, 'Andraharo', 'Itaosy', 0);
-
-
-CREATE TABLE IF NOT EXISTS Moto_parametres (
-    id INT PRIMARY KEY,
-    prix_essence DECIMAL(6,2) NOT NULL
-);
-
-INSERT INTO Moto_parametres (id, prix_essence) VALUES
-(1, 5200.00);
+(5, 5, 2, '2025-12-05', '16:00:00', '17:30:00', 35.8, 22000, 'Andraharo', 'Itaosy', 0),
+(6, 6, 3, '2025-12-06', '07:00:00', '07:45:00', 15.0, 9000, 'Analakely', 'Itaosy', 0),
+(1, 7, 1, '2025-12-07', '09:15:00', '10:00:00', 20.0, 12000, 'Isotry', 'Ambanidia', 1),
+(2, 8, 2, '2025-12-08', '11:00:00', '12:00:00', 30.0, 18000, '67Ha', 'Anosy', 0),
+(3, 9, 3, '2025-12-09', '13:00:00', '14:15:00', 25.5, 15000, 'Andraharo', 'Ivandry', 1),
+(4, 10, 1, '2025-12-10', '08:30:00', '09:15:00', 18.0, 12000, 'Ankorondrano', 'Ambohimanarina', 0);
 
 
 CREATE TABLE IF NOT EXISTS Moto_validations (
@@ -118,7 +132,6 @@ CREATE TABLE IF NOT EXISTS Moto_validations (
     FOREIGN KEY (course_id) REFERENCES Moto_courses(id)
 );
 
-
 CREATE TABLE IF NOT EXISTS Moto_modifications_courses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     course_id INT NOT NULL,
@@ -127,10 +140,4 @@ CREATE TABLE IF NOT EXISTS Moto_modifications_courses (
     valeur_avant VARCHAR(255),
     valeur_apres VARCHAR(255),
     FOREIGN KEY (course_id) REFERENCES Moto_courses(id)
-);
-
-CREATE TABLE Moto_prix_essence_historique (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    date_modification DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    prix_essence DECIMAL(6,2) NOT NULL
 );
