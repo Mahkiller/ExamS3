@@ -102,28 +102,35 @@ function e($v){
       try {
         status.textContent = 'Chargement...';
         status.style.color = '#666';
-        
+
         const res = await fetch(`/courses/${id}`);
+        const j = await res.json().catch(()=>null);
+
         if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.error || 'Erreur de chargement');
+          const msg = (j && (j.message || j.error)) ? (j.message || j.error) : `${res.status} ${res.statusText}`;
+          throw new Error(msg || 'Erreur de chargement');
         }
-        
-        const c = await res.json();
-        
+
+        if (!j || j.success !== true || !j.data) {
+          const msg = j && (j.message || j.error) ? (j.message || j.error) : 'Données introuvables';
+          throw new Error(msg);
+        }
+
+        const c = j.data; // <-- use the payload returned by the API
+
         // Remplir le formulaire
         form.elements['date_course'].value = c.date_course || '';
         form.elements['heure_debut'].value = c.heure_debut || '';
         form.elements['heure_fin'].value = c.heure_fin || '';
-        form.elements['km'].value = c.km || '';
-        form.elements['montant'].value = c.montant || '';
+        form.elements['km'].value = c.km ?? '';
+        form.elements['montant'].value = c.montant ?? '';
         form.elements['depart'].value = c.depart || '';
         form.elements['arrivee'].value = c.arrivee || '';
-        form.elements['conducteur_id'].value = c.conducteur_id || '';
-        form.elements['moto_id'].value = c.moto_id || '';
-        form.elements['client_id'].value = c.client_id || '';
-        
-        if (c.valide == 1) {
+        form.elements['conducteur_id'].value = c.conducteur_id ?? '';
+        form.elements['moto_id'].value = c.moto_id ?? '';
+        form.elements['client_id'].value = c.client_id ?? '';
+
+        if (Number(c.valide) === 1) {
           status.textContent = '⚠️ Cette course est déjà validée — modification interdite.';
           status.style.color = '#dc2626';
           form.style.display = 'none';
@@ -135,39 +142,41 @@ function e($v){
         status.textContent = '❌ Erreur: ' + err.message;
         status.style.color = '#dc2626';
         form.style.display = 'none';
+        console.error(err);
       }
     }
 
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
-      
+
       const formData = new FormData(this);
       const data = Object.fromEntries(formData.entries());
-      
+
       // Nettoyer les valeurs
       Object.keys(data).forEach(key => {
         if (data[key] === '') data[key] = null;
       });
-      
+
       try {
-        const res = await fetch(`/courses/update/${id}`, { 
+        const res = await fetch(`/courses/update/${id}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: new URLSearchParams(data)
         });
-        
-        const result = await res.json();
-        
-        if (!res.ok) {
-          throw new Error(result.error || 'Erreur de mise à jour');
+        const result = await res.json().catch(()=>null);
+
+        if (!res.ok || !result || result.success !== true) {
+          const msg = result && (result.message || result.error) ? (result.message || result.error) : `${res.status} ${res.statusText}`;
+          throw new Error(msg || 'Erreur de mise à jour');
         }
-        
+
         alert('✅ Course modifiée avec succès !');
         window.location.href = '/ui/courses';
       } catch (err) {
         alert('❌ Erreur: ' + err.message);
+        console.error(err);
       }
     });
 

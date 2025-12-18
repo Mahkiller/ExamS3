@@ -26,3 +26,16 @@
 */
 $ds = DIRECTORY_SEPARATOR;
 require(__DIR__. $ds . '..' . $ds . 'app' . $ds . 'config' . $ds . 'bootstrap.php');
+
+/*
+ * Homepage route → réaffectée : la racine '/' affiche maintenant la page de choix (app/views/index.php).
+ * Le tableau financier est accessible via /dashboard pour conserver la vue welcome existante.
+ */
+Flight::route('GET /', function() {
+    Flight::render('index');
+});
+
+Flight::route('GET /dashboard', function() {
+    $message = 'Bienvenue dans l’application Coopérative Moto!';
+    Flight::render('welcome', ['message' => $message]);
+});

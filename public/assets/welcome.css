@@ -14,39 +14,90 @@ body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
 }
-.container{max-width:1200px;margin:0 auto}
+
+/* larger container so the table has more room */
+.container{max-width:1400px;margin:0 auto}
+
+/* header / links */
 .header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
 .title{font-size:22px;font-weight:700}
 .links a{display:inline-block;margin-left:8px;padding:9px 14px;border-radius:10px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600}
-.card{background:var(--card);padding:22px;border-radius:var(--radius);box-shadow:var(--shadow)}
+
+/* card: allow horizontal scroll for very wide tables */
+.card{background:var(--card);padding:24px;border-radius:var(--radius);box-shadow:var(--shadow);overflow-x:auto}
+
+/* KPIs */
 .kpis{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px}
 .kpi{background:#fbfdff;border:1px solid #eef4ff;padding:14px;border-radius:12px;min-width:170px}
 .kpi .label{color:var(--muted);font-size:13px}
 .kpi b{display:block;font-size:18px;margin-top:6px}
+
+/* dates */
 .date-block{margin-top:20px;border-top:1px dashed #eef2ff;padding-top:16px}
 .date-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .date-totals{display:flex;gap:12px;align-items:center}
+
+/* badges */
 .badge{font-size:13px;color:#fff;padding:6px 10px;border-radius:10px}
 .badge.green{background:var(--success)}
 .badge.red{background:var(--danger)}
-.table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
-.table th{background:#0b1220;color:#fff;padding:12px 10px;text-align:left;font-weight:700}
-.table td{padding:14px 16px;border-bottom:1px solid #eef2f6;vertical-align:middle}
+
+/* table: increase spacing and avoid truncation */
+.table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;table-layout:auto;min-width:1100px}
+.table th{background:#0b1220;color:#fff;padding:14px 12px;text-align:left;font-weight:700;white-space:nowrap}
+.table td{padding:14px 16px;border-bottom:1px solid #eef2f6;vertical-align:middle;word-break:normal;white-space:normal}
 .table tr:nth-child(even){background:#fbfdff}
+
+/* ensure numeric columns do not wrap and are right aligned:
+   Heure(1), Conducteur(2), Client(3), Moto(4),
+   KM(5), Montant(6), Salaires(7), Entretien(8), Dépense(9), Bénéfice(10), ...
+*/
+.table th:nth-child(5), .table td:nth-child(5),
+.table th:nth-child(6), .table td:nth-child(6),
+.table th:nth-child(7), .table td:nth-child(7),
+.table th:nth-child(8), .table td:nth-child(8),
+.table th:nth-child(9), .table td:nth-child(9),
+.table th:nth-child(10), .table td:nth-child(10) {
+  white-space:nowrap;
+  text-align:right;
+  padding-right:20px;
+}
+
+/* small text */
 .small{font-size:13px;color:var(--muted)}
+
+/* test buttons */
 .test-results{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap}
 .test-btn{padding:8px 12px;border-radius:10px;border:1px solid #e6eefc;background:#fff;cursor:pointer}
+
+/* collapsible */
 .collapsible{cursor:pointer;color:var(--accent);text-decoration:underline;background:none;border:0;padding:0;font-weight:700}
 .positive{color:var(--success);font-weight:700}
 .negative{color:var(--danger);font-weight:700}
 
-/* Actions button */
+/* Actions button: ensure they wrap and don't overlap */
 .action-btn{padding:8px 12px;border-radius:8px;border:0;color:#fff;cursor:pointer;font-weight:600;min-width:90px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:6px;box-sizing:border-box}
 .action-btn.validate{background:var(--success);margin-right:6px}
 .action-btn.view{background:#06b6d4}
 .action-btn.danger{background:var(--danger)}
 
-/* Spacing improvements for mobile */
+/* make the actions cell flexible and allow wrapping */
+.table td:last-child{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:250px}
+
+/* responsive: reduce min-width but keep numeric alignment */
+@media(max-width:1100px){
+  .container{padding-left:16px;padding-right:16px}
+  .table{min-width:900px}
+  .table th:nth-child(5), .table td:nth-child(5),
+  .table th:nth-child(6), .table td:nth-child(6),
+  .table th:nth-child(7), .table td:nth-child(7),
+  .table th:nth-child(8), .table td:nth-child(8),
+  .table th:nth-child(9), .table td:nth-child(9),
+  .table th:nth-child(10), .table td:nth-child(10) {
+    padding-right:12px;
+  }
+}
+
 @media(max-width:720px){
   .table td:last-child{min-width:0}
   .action-btn{min-width:72px;padding:7px 10px}

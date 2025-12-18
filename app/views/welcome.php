@@ -1,11 +1,11 @@
 <?php
-// Page d'accueil — tableau financier amélioré.
+//tableau financier amélioré.
 if (!class_exists('Flight')) {
     echo 'Flight non disponible.';
     exit;
 }
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
-function fmt($n) { return number_format((float)$n, 0, '', ' '); }
+function fmt($n) { return number_format((float)$n, 2, ',', ' '); }
 
 $db = Flight::db();
 $error = null;
@@ -102,7 +102,7 @@ uksort($dates, function($a,$b){
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Tableau — Coopérative Moto</title>
+<title>Tableau - Coopérative Moto</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="/assets/welcome.css">
 </head>
@@ -110,7 +110,7 @@ uksort($dates, function($a,$b){
 <div class="container">
   <div class="header">
     <div>
-      <div class="title">Tableau financier — Coopérative Moto</div>
+      <div class="title">Tableau financier - Coopérative Moto</div>
       <div class="small">Affiche totaux et détail des courses</div>
     </div>
     <div class="links">
@@ -180,19 +180,25 @@ uksort($dates, function($a,$b){
                   <td><?= e($r['conducteur_nom']) ?></td>
                   <td><?= e($r['client_nom']) ?></td>
                   <td><?= e($r['moto_immat']) ?></td>
-                  <td class="small"><?= e(fmt($r['km'])) ?></td>
-                  <td><?= e(fmt($r['montant'])) ?></td>
+                  <td class="small"><strong><?= e(fmt($r['km'])) ?></strong></td>
+                  <td><strong><?= e(fmt($r['montant'])) ?></strong></td>
                   <td><?= e(fmt($r['salaire'])) ?></td>
                   <td><?= e(fmt($r['entretien'])) ?></td>
-                  <td><?= e(fmt($r['depense'])) ?></td>
+                  <td style="color:var(--danger)"><?= e(fmt($r['depense'])) ?></td>
                   <td class="<?= $r['benefice']>=0 ? 'positive' : 'negative' ?>"><?= e(fmt($r['benefice'])) ?></td>
                   <td><?= e($r['depart'] . ' → ' . $r['arrivee']) ?></td>
                   <td class="small"><?= $r['valide'] ? 'Oui' : 'Non' ?></td>
                   <td>
-                    <?php if (!$r['valide']): ?>
+                    <?php if (! $r['valide']): ?>
                       <button class="action-btn validate" onclick="validateCourse(<?= $r['id'] ?>)">Valider</button>
+                      <button class="action-btn danger" onclick="cancelCourse(<?= $r['id'] ?>)">Annuler</button>
+                      <a class="action-btn view" href="/ui/course/<?= $r['id'] ?>">Modifier</a>
+                      <!-- nouveau : accès page modifier le prix de l'essence -->
+                      <a class="action-btn" href="/ui/course-price/<?= $r['id'] ?>" style="background:#ff9f1c">Prix essence</a>
+                    <?php else: ?>
+                      <!-- course validée : actions limitées -->
+                      <span class="small">Course validée</span>
                     <?php endif; ?>
-                    <a class="action-btn view" href="/ui/course/<?= $r['id'] ?>">Modifier</a>
                   </td>
                 </tr>
               <?php endforeach; ?>
