@@ -176,7 +176,6 @@ uksort($dates, function($a,$b){
   <div class="header">
     <div>
       <div class="title">Tableau financier - Coopérative Moto</div>
-      <div class="small">Affiche totaux et détail des courses</div>
     </div>
     <div class="links">
       <a href="/ui/courses">Gestion des courses</a>
@@ -300,11 +299,6 @@ uksort($dates, function($a,$b){
       <div class="kpi"><div class="label">Bénéfice</div><b class="<?= $totals['benefice']>=0 ? 'badge green' : 'badge red' ?>"><?= e(fmt($totals['benefice'])) ?> Ar</b></div>
     </div>
 
-    <div class="test-results">
-      <button class="test-btn" id="testCoursesBtn">Tester API courses</button>
-      <button class="test-btn" id="testCourseBtn">Tester modification</button>
-      <div id="testOutput" class="small" style="margin-left:8px"></div>
-    </div>
 
     <?php if (empty($dates)): ?>
       <div class="small" style="margin-top:12px">Aucune course enregistrée.</div>
