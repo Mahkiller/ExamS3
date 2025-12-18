@@ -1,5 +1,5 @@
 <?php
-
+ 
 use flight\Engine;
 use flight\net\Router;
 use app\middlewares\SecurityHeadersMiddleware;
@@ -121,5 +121,8 @@ $router->group('', function(Router $router) use ($app) {
     $router->get('/hello-world/@name', function($name) use ($app) {
         $app->render('hello', [ 'name' => $name ]);
     });
+
+	// Rapport financier
+	$router->get('/reports/finance', [\app\controllers\ReportsController::class, 'index']);
 
 }, [ SecurityHeadersMiddleware::class ]);
