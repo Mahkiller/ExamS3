@@ -133,4 +133,7 @@ CREATE TABLE Moto_prix_essence_historique (
     date_modification DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     prix_essence DECIMAL(6,2) NOT NULL
 );
-    
+
+-- Ajoute la colonne prix_essence à Moto_courses pour stocker le prix de l'essence par course
+ALTER TABLE Moto_courses
+    ADD COLUMN IF NOT EXISTS prix_essence DECIMAL(8,2) DEFAULT NULL;
