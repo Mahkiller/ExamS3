@@ -127,3 +127,10 @@ CREATE TABLE IF NOT EXISTS Moto_modifications_courses (
     valeur_apres VARCHAR(255),
     FOREIGN KEY (course_id) REFERENCES Moto_courses(id)
 );
+
+CREATE TABLE Moto_prix_essence_historique (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date_modification DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    prix_essence DECIMAL(6,2) NOT NULL
+);
+    
