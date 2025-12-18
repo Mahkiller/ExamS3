@@ -1,232 +1,242 @@
 <?php
-// Vue d'accueil modifiée — calcule recettes, salaires, entretien, dépenses et bénéfices par date.
-// Ne crée aucun fichier. Tente une requête robuste et tombe en fallback si schéma différent.
+// Page d'accueil — tableau financier amélioré.
+// Utilise Flight::db(), n'ajoute aucun fichier.
 if (!class_exists('Flight')) {
     echo 'Flight non disponible.';
     exit;
 }
-
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
+function fmt($n) { return number_format((float)$n, 2, ',', ' '); }
 
 $db = Flight::db();
-$rows = [];
-$totals = ['recette' => 0.0, 'salaire' => 0.0, 'entretien' => 0.0, 'depense' => 0.0, 'benefice' => 0.0];
 $error = null;
-$debug = ['queries' => [], 'notes' => [], 'param_columns' => []];
-
+$totals = ['recette'=>0.0,'salaire'=>0.0,'entretien'=>0.0,'depense'=>0.0,'benefice'=>0.0];
+$dates = [];
 try {
-    // Essayer d'agréger directement depuis les courses en utilisant les pourcentages fournis
-    // salaire = montant * conducteur.salaire_pourcentage/100
-    // entretien = montant * moto.entretien_pourcentage/100
     $sql = "
-        SELECT DATE(c.date_course) AS date,
-               SUM(c.montant) AS recette,
-               SUM(c.montant * (co.salaire_pourcentage / 100)) AS salaire,
-               SUM(c.montant * (m.entretien_pourcentage / 100)) AS entretien
+        SELECT
+            c.id,
+            DATE(c.date_course) AS date,
+            c.date_course,
+            c.heure_debut,
+            c.heure_fin,
+            c.km,
+            c.montant,
+            c.depart,
+            c.arrivee,
+            c.valide,
+            co.id AS conducteur_id,
+            co.nom AS conducteur_nom,
+            co.salaire_pourcentage,
+            m.id AS moto_id,
+            m.immatriculation AS moto_immat,
+            m.entretien_pourcentage,
+            cl.id AS client_id,
+            cl.nom AS client_nom
         FROM Moto_courses c
         LEFT JOIN Moto_conducteurs co ON c.conducteur_id = co.id
         LEFT JOIN Moto_motos m ON c.moto_id = m.id
-        GROUP BY DATE(c.date_course)
-        ORDER BY DATE(c.date_course) DESC
+        LEFT JOIN Moto_clients cl ON c.client_id = cl.id
+        ORDER BY c.date_course DESC, c.heure_debut ASC, c.id ASC
     ";
-    $debug['queries'][] = $sql;
     $stmt = $db->query($sql);
-    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $courses = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-    if (empty($data)) {
-        // si aucune ligne, on tentera une autre approche (ex: tables manquantes ou colonnes différentes)
-        $debug['notes'][] = 'Aucune ligne retournée par l\'agrégation principale.';
-    } else {
-        foreach ($data as $r) {
-            $date = $r['date'] ?? 'Sans date';
-            $recette = (float) ($r['recette'] ?? 0.0);
-            $salaire = (float) ($r['salaire'] ?? 0.0);
-            $entretien = (float) ($r['entretien'] ?? 0.0);
-            $depense = $salaire + $entretien;
-            $benefice = $recette - $depense;
+    foreach ($courses as $c) {
+        $date = $c['date'] ?? 'Sans date';
+        $montant = (float)($c['montant'] ?? 0);
+        $salaire = $montant * ((float)($c['salaire_pourcentage'] ?? 0) / 100.0);
+        $entretien = $montant * ((float)($c['entretien_pourcentage'] ?? 0) / 100.0);
+        $depense = $salaire + $entretien;
+        $benefice = $montant - $depense;
 
-            $rows[] = [
-                'date' => $date,
-                'recette' => $recette,
-                'salaire' => $salaire,
-                'entretien' => $entretien,
-                'depense' => $depense,
-                'benefice' => $benefice,
-            ];
-
-            $totals['recette'] += $recette;
-            $totals['salaire'] += $salaire;
-            $totals['entretien'] += $entretien;
-            $totals['depense'] += $depense;
-        }
-        $totals['benefice'] = $totals['recette'] - $totals['depense'];
-    }
-
-    // Si la requête principale a échoué (colonnes/tables manquantes), fallback : détecter colonnes et faire des requêtes séparées
-} catch (Exception $ex) {
-    $debug['queries_error'] = $ex->getMessage();
-    // Fallback : tenter d'obtenir les recettes par date (si date_course existe)
-    try {
-        $stmt = $db->query("SELECT DATE(date_course) AS date, SUM(montant) AS recette FROM Moto_courses GROUP BY DATE(date_course) ORDER BY DATE(date_course) DESC");
-        $recettes = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    } catch (Exception $ex2) {
-        $recettes = [];
-        $debug['recette_error'] = $ex2->getMessage();
-    }
-
-    // Tentative de calcul des salaires/entretien par jonction manuelle si colonnes existantes
-    try {
-        $stmt = $db->query("SELECT DATE(c.date_course) AS date, SUM(COALESCE(c.montant,0) * COALESCE(co.salaire_pourcentage,0) / 100) AS salaire, SUM(COALESCE(c.montant,0) * COALESCE(m.entretien_pourcentage,0) / 100) AS entretien FROM Moto_courses c LEFT JOIN Moto_conducteurs co ON c.conducteur_id = co.id LEFT JOIN Moto_motos m ON c.moto_id = m.id GROUP BY DATE(c.date_course) ORDER BY DATE(c.date_course) DESC");
-        $deps = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    } catch (Exception $ex3) {
-        $deps = [];
-        $debug['deps_error'] = $ex3->getMessage();
-    }
-
-    // Fusionner recettes et deps de fallback
-    $map = [];
-    foreach ($recettes as $r) {
-        $d = $r['date'] ?? 'Sans date';
-        $map[$d]['date'] = $d;
-        $map[$d]['recette'] = (float) ($r['recette'] ?? 0.0);
-    }
-    foreach ($deps as $d) {
-        $dt = $d['date'] ?? 'Sans date';
-        $map[$dt]['date'] = $dt;
-        $map[$dt]['salaire'] = (float) ($d['salaire'] ?? 0.0);
-        $map[$dt]['entretien'] = (float) ($d['entretien'] ?? 0.0);
-    }
-
-    foreach ($map as $m) {
-        $rec = $m['recette'] ?? 0.0;
-        $sal = $m['salaire'] ?? 0.0;
-        $ent = $m['entretien'] ?? 0.0;
-        $dep = $sal + $ent;
-        $ben = $rec - $dep;
-        $rows[] = [
-            'date' => $m['date'],
-            'recette' => $rec,
-            'salaire' => $sal,
-            'entretien' => $ent,
-            'depense' => $dep,
-            'benefice' => $ben,
+        $row = [
+            'id'=>(int)$c['id'],
+            'heure_debut'=>$c['heure_debut'],
+            'heure_fin'=>$c['heure_fin'],
+            'km'=> (float)$c['km'],
+            'montant'=>$montant,
+            'depart'=>$c['depart'],
+            'arrivee'=>$c['arrivee'],
+            'valide'=> (int)$c['valide'],
+            'conducteur_nom'=>$c['conducteur_nom'] ?? '—',
+            'moto_immat'=>$c['moto_immat'] ?? '—',
+            'client_nom'=>$c['client_nom'] ?? '—',
+            'salaire'=>$salaire,
+            'entretien'=>$entretien,
+            'depense'=>$depense,
+            'benefice'=>$benefice,
         ];
-        $totals['recette'] += $rec;
-        $totals['salaire'] += $sal;
-        $totals['entretien'] += $ent;
-        $totals['depense'] += $dep;
+        if (!isset($dates[$date])) {
+            $dates[$date] = ['rows'=>[], 'totals'=>['recette'=>0.0,'salaire'=>0.0,'entretien'=>0.0,'depense'=>0.0,'benefice'=>0.0]];
+        }
+        $dates[$date]['rows'][] = $row;
+        $dates[$date]['totals']['recette'] += $montant;
+        $dates[$date]['totals']['salaire'] += $salaire;
+        $dates[$date]['totals']['entretien'] += $entretien;
+        $dates[$date]['totals']['depense'] += $depense;
+        $dates[$date]['totals']['benefice'] += $benefice;
+
+        $totals['recette'] += $montant;
+        $totals['salaire'] += $salaire;
+        $totals['entretien'] += $entretien;
+        $totals['depense'] += $depense;
+        $totals['benefice'] += $benefice;
     }
-    $totals['benefice'] = $totals['recette'] - $totals['depense'];
+} catch (Exception $ex) {
+    $error = $ex->getMessage();
+    try { $r = $db->query("SELECT SUM(montant) AS s FROM Moto_courses")->fetch(PDO::FETCH_ASSOC); $totals['recette'] = (float)($r['s'] ?? 0); } catch (Exception $_) {}
 }
-
-// Formatage et tri : s'assurer tri date desc, 'Sans date' en fin
-usort($rows, function($a, $b) {
-    $da = $a['date'] ?? '';
-    $dbt = $b['date'] ?? '';
-    if ($da === 'Sans date') return 1;
-    if ($dbt === 'Sans date') return -1;
-    return strcmp($dbt, $da);
-});
-
-// Helper format
-function fmt($n) { return number_format((float)$n, 2, ',', ' '); }
+uksort($dates, function($a,$b){ if ($a==='Sans date') return 1; if ($b==='Sans date') return -1; return strcmp($b,$a); });
 ?>
 <!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <title>Rapport financier</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <style>
-        :root{--bg:#f6f8fb;--card:#fff;--muted:#6b7280;--accent:#0f62fe;--success:#16a34a;--danger:#dc2626}
-        body{font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;color:#111827;background:var(--bg);padding:28px;margin:0}
-        .container{max-width:1100px;margin:0 auto}
-        h1{font-size:20px;margin:0 0 12px;color:#0f172a}
-        .card{background:var(--card);border-radius:10px;padding:18px;box-shadow:0 6px 18px rgba(15,23,42,0.06);margin-bottom:16px}
-        .summary{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-        .tot{padding:10px 14px;border-radius:8px;background:#f8fafc;border:1px solid #eef2ff;min-width:180px}
-        .tot b{display:block;font-size:18px}
-        .tot .muted{font-size:13px;color:var(--muted)}
-        table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
-        thead th{background:#0f172a;color:#fff;padding:10px;text-align:right;border-radius:4px;font-weight:600}
-        thead th.left{text-align:left}
-        tbody tr:nth-child(odd){background:#ffffff}
-        tbody tr:nth-child(even){background:#fafafb}
-        th,td{padding:10px;border-bottom:1px solid #eef2f6;text-align:right}
-        td.left,th.left{text-align:left}
-        .positive{color:var(--success);font-weight:600}
-        .negative{color:var(--danger);font-weight:600}
-        .small{font-size:13px;color:var(--muted)}
-        .debug{margin-top:12px;padding:12px;background:#fff7ed;border:1px dashed #ffd8a8;color:#92400e;border-radius:6px;font-size:13px}
-        @media(max-width:720px){ thead th,td,th{font-size:13px} .summary{flex-direction:column;align-items:flex-start} }
-    </style>
+<meta charset="utf-8">
+<title>Tableau — Coopérative Moto</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/assets/welcome.css">
 </head>
 <body>
 <div class="container">
-    <h1>Rapport financier</h1>
+  <div class="header">
+    <div>
+      <div class="title">Tableau financier — Coopérative Moto</div>
+      <div class="small">Affiche totaux et détail des courses (conducteur, client, moto, horaire, départ/arrivée)</div>
+    </div>
+    <div class="links">
+      <?php if (file_exists(__DIR__ . '/courses.php')): ?><a href="/ui/courses">Gestion des courses</a><?php endif; ?>
+      <?php if (file_exists(__DIR__ . '/modification.php')): ?><a href="/ui/course/1" style="background:#06b6d4">Modifier une course</a><?php endif; ?>
+    </div>
+  </div>
 
-    <div class="card">
-        <div class="summary">
-            <div class="tot">
-                <span class="small">Recettes</span>
-                <b><?= e(fmt($totals['recette'])) ?> Ar</b>
-            </div>
-            <div class="tot">
-                <span class="small">Salaires (total)</span>
-                <b><?= e(fmt($totals['salaire'])) ?> Ar</b>
-            </div>
-            <div class="tot">
-                <span class="small">Entretien (total)</span>
-                <b><?= e(fmt($totals['entretien'])) ?> Ar</b>
-            </div>
-            <div class="tot">
-                <span class="small">Dépenses (salaires + entretien)</span>
-                <b><?= e(fmt($totals['depense'])) ?> Ar</b>
-            </div>
-            <div class="tot">
-                <span class="small">Bénéfice (recette - dépense)</span>
-                <b class="<?= $totals['benefice'] >= 0 ? 'positive' : 'negative' ?>"><?= e(fmt($totals['benefice'])) ?> Ar</b>
-            </div>
-        </div>
+  <div class="card">
+    <?php if ($error): ?><div style="color:#a00;margin-bottom:10px">Erreur : <?= e($error) ?></div><?php endif; ?>
 
-        <table aria-label="Rapport financier par date">
+    <div class="kpis">
+      <div class="kpi"><div class="label">Recettes</div><b><?= e(fmt($totals['recette'])) ?> Ar</b></div>
+      <div class="kpi"><div class="label">Salaires</div><b><?= e(fmt($totals['salaire'])) ?> Ar</b></div>
+      <div class="kpi"><div class="label">Entretien</div><b><?= e(fmt($totals['entretien'])) ?> Ar</b></div>
+      <div class="kpi"><div class="label">Dépenses (sal + entretien)</div><b><?= e(fmt($totals['depense'])) ?> Ar</b></div>
+      <div class="kpi"><div class="label">Bénéfice (recette - dépense)</div><b class="<?= $totals['benefice']>=0 ? 'badge green' : 'badge red' ?>"><?= e(fmt($totals['benefice'])) ?> Ar</b></div>
+    </div>
+
+    <div class="test-results">
+      <button class="test-btn" id="testCoursesBtn">Tester /ui/courses</button>
+      <button class="test-btn" id="testCourseBtn">Tester /ui/course/1</button>
+      <button class="test-btn" id="testApiBtn">Tester /courses (API)</button>
+      <div id="testOutput" class="small" style="margin-left:8px"></div>
+    </div>
+
+    <?php if (empty($dates)): ?>
+      <div class="small" style="margin-top:12px">Aucune course enregistrée.</div>
+    <?php else: ?>
+      <?php foreach ($dates as $date => $block): ?>
+        <div class="date-block" id="date-<?= e($date) ?>">
+          <div class="date-header">
+            <div><button class="collapsible" data-target="tbl-<?= e($date) ?>"><?= e($date) ?></button> &nbsp; <span class="small">(<?= count($block['rows']) ?> course<?= count($block['rows'])>1?'s':'' ?>)</span></div>
+            <div class="date-totals small">
+              Recette: <strong><?= e(fmt($block['totals']['recette'])) ?> Ar</strong>&nbsp;|
+              Dépense: <strong><?= e(fmt($block['totals']['depense'])) ?> Ar</strong>&nbsp;|
+              Bénéfice: <strong class="<?= $block['totals']['benefice']>=0 ? 'badge green' : 'badge red' ?>"><?= e(fmt($block['totals']['benefice'])) ?> Ar</strong>
+            </div>
+          </div>
+
+          <table class="table" id="tbl-<?= e($date) ?>">
             <thead>
-                <tr>
-                    <th class="left">Date</th>
-                    <th>Recette (Ar)</th>
-                    <th>Salaires (Ar)</th>
-                    <th>Entretien (Ar)</th>
-                    <th>Dépense (Ar)</th>
-                    <th>Bénéfice (Ar)</th>
-                </tr>
+              <tr>
+                <th>Heure</th>
+                <th>Conducteur</th>
+                <th>Client</th>
+                <th>Moto</th>
+                <th>KM</th>
+                <th>Montant</th>
+                <th>Salaires</th>
+                <th>Entretien</th>
+                <th>Dépense</th>
+                <th>Bénéfice</th>
+                <th>Départ → Arrivée</th>
+                <th>Validée</th>
+                <th>Actions</th>
+              </tr>
             </thead>
             <tbody>
-                <?php if (empty($rows)): ?>
-                    <tr><td class="left" colspan="6">Aucune donnée disponible.</td></tr>
-                <?php else: ?>
-                    <?php foreach ($rows as $r): ?>
-                        <tr>
-                            <td class="left"><?= e($r['date'] ?? '') ?></td>
-                            <td><?= e(fmt($r['recette'] ?? 0)) ?></td>
-                            <td><?= e(fmt($r['salaire'] ?? 0)) ?></td>
-                            <td><?= e(fmt($r['entretien'] ?? 0)) ?></td>
-                            <td><?= e(fmt($r['depense'] ?? (($r['salaire'] ?? 0)+($r['entretien'] ?? 0)))) ?></td>
-                            <td class="<?= ($r['benefice'] ?? 0) >= 0 ? 'positive' : 'negative' ?>"><?= e(fmt($r['benefice'] ?? 0)) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+              <?php foreach ($block['rows'] as $r): ?>
+                <tr>
+                  <td class="small"><?= e(($r['heure_debut']?:'') . ($r['heure_fin'] ? ' — '.$r['heure_fin'] : '')) ?></td>
+                  <td><?= e($r['conducteur_nom']) ?></td>
+                  <td><?= e($r['client_nom']) ?></td>
+                  <td><?= e($r['moto_immat']) ?></td>
+                  <td class="small"><?= e(fmt($r['km'])) ?></td>
+                  <td><?= e(fmt($r['montant'])) ?></td>
+                  <td><?= e(fmt($r['salaire'])) ?></td>
+                  <td><?= e(fmt($r['entretien'])) ?></td>
+                  <td><?= e(fmt($r['depense'])) ?></td>
+                  <td class="<?= $r['benefice']>=0 ? 'positive' : 'negative' ?>"><?= e(fmt($r['benefice'])) ?></td>
+                  <td><?= e($r['depart'] . ' → ' . $r['arrivee']) ?></td>
+                  <td class="small"><?= $r['valide'] ? 'Oui' : 'Non' ?></td>
+                  <td>
+                    <?php if (! $r['valide']): ?>
+                      <button class="action-btn validate" onclick="validateCourse(<?= $r['id'] ?>)">Valider</button>
+                    <?php endif; ?>
+                    <a class="action-btn view" href="/ui/course/<?= $r['id'] ?>">Modifier</a>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
             </tbody>
-        </table>
-
-        <div class="debug">
-            <div><strong>Debug —</strong> colonnes Moto_parametres: <?= e(implode(', ', ($debug['param_columns'] ?: ['(non vérifiées)']))) ?></div>
-            <?php if (!empty($debug['queries_error'])): ?><div style="color:#a00">Query error: <?= e($debug['queries_error']) ?></div><?php endif; ?>
-            <?php if (!empty($debug['recette_error'])): ?><div style="color:#a00">Recette error: <?= e($debug['recette_error']) ?></div><?php endif; ?>
-            <?php if (!empty($debug['deps_error'])): ?><div style="color:#a00">Deps error: <?= e($debug['deps_error']) ?></div><?php endif; ?>
-            <?php foreach ($debug['notes'] as $n): ?><div class="small"><?= e($n) ?></div><?php endforeach; ?>
-            <div class="small">Remarque: Les salaires et l'entretien sont calculés à partir des pourcentages présents dans les tables Moto_conducteurs et Moto_motos si disponibles.</div>
+          </table>
         </div>
-    </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+
+  </div>
 </div>
+
+<script>
+document.querySelectorAll('.collapsible').forEach(btn=>{
+  btn.addEventListener('click', ()=> {
+    const id = btn.getAttribute('data-target');
+    const tbl = document.getElementById(id);
+    if (!tbl) return;
+    tbl.style.display = tbl.style.display === 'none' ? '' : 'none';
+  });
+});
+
+async function testUrl(u){
+  try {
+    const res = await fetch(u, { method: 'GET' });
+    return `${res.status} ${res.statusText}`;
+  } catch (e) {
+    return 'Erreur: '+e.message;
+  }
+}
+
+document.getElementById('testCoursesBtn').addEventListener('click', async ()=>{
+  document.getElementById('testOutput').textContent = 'Test en cours...';
+  const r = await testUrl('/ui/courses');
+  document.getElementById('testOutput').textContent = '/ui/courses → ' + r;
+});
+document.getElementById('testCourseBtn').addEventListener('click', async ()=>{
+  document.getElementById('testOutput').textContent = 'Test en cours...';
+  const r = await testUrl('/ui/course/1');
+  document.getElementById('testOutput').textContent = '/ui/course/1 → ' + r;
+});
+document.getElementById('testApiBtn').addEventListener('click', async ()=>{
+  document.getElementById('testOutput').textContent = 'Test en cours...';
+  const r = await testUrl('/courses');
+  document.getElementById('testOutput').textContent = '/courses → ' + r;
+});
+
+async function validateCourse(id){
+  if(!confirm('Valider la course ? (une fois validée, elle ne sera plus modifiable)')) return;
+  try {
+    const res = await fetch(`/courses/validate/${id}`, { method: 'POST' });
+    if (!res.ok) throw new Error('Erreur serveur');
+    location.reload();
+  } catch (e) {
+    alert('Erreur: ' + e.message);
+  }
+}
+</script>
 </body>
 </html>

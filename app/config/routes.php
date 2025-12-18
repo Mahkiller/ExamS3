@@ -125,4 +125,15 @@ $router->group('', function(Router $router) use ($app) {
 	// Rapport financier
 	$router->get('/reports/finance', [\app\controllers\ReportsController::class, 'index']);
 
+	// Ajoutez ces routes UI vers la fin du fichier (ou à un endroit approprié)
+	$router->get('/ui/courses', function() {
+		// affiche la vue d'interface de gestion des courses
+		Flight::render('courses');
+	});
+
+	$router->get('/ui/course/@id', function($id) {
+		// affiche la vue de modification pour la course $id
+		Flight::render('modification', ['id' => (int)$id]);
+	});
+
 }, [ SecurityHeadersMiddleware::class ]);
