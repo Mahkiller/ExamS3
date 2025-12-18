@@ -1,0 +1,11 @@
+/* Styles spécifiques à la page de création / liste des courses */
+.card h3{margin:0 0 12px 0}
+#createCard input, #createCard select {padding:10px;border-radius:8px;border:1px solid #e6edf8}
+#createCard .action-btn{min-width:110px}
+#coursesTable tbody tr{height:56px}
+#coursesTable td{vertical-align:middle}
+#coursesTable td strong{white-space:nowrap}
+#statusLine{margin-top:8px}
+@media(max-width:720px){
+  #createCard input{width:100%}
+}

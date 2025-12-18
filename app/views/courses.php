@@ -10,6 +10,7 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
   <title>Nouvelle course +</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="/assets/welcome.css">
+  <link rel="stylesheet" href="/assets/courses.css">
   <style>
     /* petit style local pour table d'erreurs */
     #statusLine{margin-top:10px;color:#a00;font-weight:600}
@@ -24,7 +25,8 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
         <div class="small">Créer une course et voir la liste. Annuler supprime si non validée.</div>
       </div>
       <div>
-        <a href="/dashboard" class="links">Retour au tableau</a>
+        <a href="/" class="links">← Retour accueil</a>
+        <a href="/dashboard" class="links" style="margin-left:8px">Tableau</a>
       </div>
     </div>
 
@@ -149,7 +151,8 @@ function e($v){ return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE,
       window.cancel = async function(id){
         if(!confirm('Annuler (supprimer) cette course ?')) return;
         try {
-          const res = await fetch(`/courses/delete/${id}`, { method: 'DELETE' });
+          // Utiliser POST pour compatibilité serveur (route POST /courses/delete/@id ajoutée)
+          const res = await fetch(`/courses/delete/${id}`, { method: 'POST' });
           if (!res.ok) throw new Error('Erreur serveur');
           await loadCourses();
         } catch (err) { alert('Erreur: '+err.message); console.error(err); }

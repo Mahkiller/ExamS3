@@ -249,23 +249,38 @@ async function validateCourse(id) {
   if (!confirm('Valider la course ? (une fois validée, elle ne sera plus modifiable)')) return;
   try {
     const res = await fetch(`/courses/validate/${id}`, { 
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      }
+      method: 'POST'
     });
-    
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Erreur serveur');
+      const error = await res.json().catch(()=>({message:'Erreur serveur'}));
+      throw new Error(error.message || 'Erreur serveur');
     }
-    
     const result = await res.json();
     if (result.success) {
       alert('Course validée avec succès !');
       location.reload();
     } else {
-      throw new Error('Échec de la validation');
+      throw new Error(result.message || 'Échec de la validation');
+    }
+  } catch (e) {
+    alert('Erreur: ' + e.message);
+  }
+}
+
+async function cancelCourse(id){
+  if(!confirm('Annuler (supprimer) cette course ?')) return;
+  try {
+    // Utiliser POST pour compatibilité serveur
+    const res = await fetch(`/courses/delete/${id}`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({message:'Erreur serveur'}));
+      throw new Error(err.message || 'Erreur serveur');
+    }
+    const j = await res.json();
+    if (j.success) {
+      location.reload();
+    } else {
+      throw new Error(j.message || 'Erreur suppression');
     }
   } catch (e) {
     alert('Erreur: ' + e.message);

@@ -17,6 +17,7 @@ function e($v){
   <title>Modifier la course #<?= e($id) ?></title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="/assets/welcome.css">
+  <link rel="stylesheet" href="/assets/modification.css">
 </head>
 <body>
   <div class="container">
@@ -27,6 +28,7 @@ function e($v){
       </div>
       <div class="links">
         <a href="/ui/courses">← Retour à la liste</a>
+        <a href="/" style="margin-left:8px" class="links">Accueil</a>
       </div>
     </div>
     

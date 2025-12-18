@@ -1,0 +1,9 @@
+/* Styles page prix essence */
+.form-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.form-row label{min-width:120px}
+input[type="number"]{padding:9px;border-radius:8px;border:1px solid #e6eef8}
+.actions .action-btn{min-width:120px}
+.small .muted{color:#667085}
+@media(max-width:720px){
+  .form-row{flex-direction:column;align-items:stretch}
+}

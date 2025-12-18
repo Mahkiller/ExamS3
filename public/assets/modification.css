@@ -1,0 +1,9 @@
+/* Styles pour la page modification */
+.container .card{max-width:980px;margin:0 auto}
+form label{font-size:13px;color:#344155}
+form input, form select{border:1px solid #e9eef8;padding:9px;border-radius:8px}
+form .action-btn{min-width:120px}
+#status{font-weight:600}
+@media(max-width:720px){
+  .container .card{padding:16px}
+}
