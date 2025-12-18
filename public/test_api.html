@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Courses</title>
+</head>
+<body>
+    <h1>Test API Courses (sans CSP)</h1>
+    
+    <div>
+        <h3>1. Test GET /courses</h3>
+        <button onclick="testGet()">Test GET</button>
+        <div id="result-get" style="background:#f0f0f0; padding:10px; margin:10px;"></div>
+    </div>
+    
+    <div>
+        <h3>2. Test POST /courses/create</h3>
+        <button onclick="testCreate()">Test CREATE</button>
+        <div id="result-create" style="background:#f0f0f0; padding:10px; margin:10px;"></div>
+    </div>
+    
+    <div>
+        <h3>3. Test validation</h3>
+        Course ID: <input type="number" id="validateId" value="1">
+        <button onclick="testValidate()">Test VALIDATE</button>
+        <div id="result-validate" style="background:#f0f0f0; padding:10px; margin:10px;"></div>
+    </div>
+    
+    <script>
+    async function testGet() {
+        try {
+            const res = await fetch('/courses');
+            const data = await res.json();
+            document.getElementById('result-get').innerHTML = 
+                `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        } catch (error) {
+            document.getElementById('result-get').innerHTML = 
+                `Erreur: ${error.message}`;
+        }
+    }
+    
+    async function testCreate() {
+        try {
+            const data = {
+                date_course: '2025-12-18',
+                heure_debut: '10:00',
+                heure_fin: '15:00',
+                km: 10,
+                montant: 15000,
+                depart: 'Ankatso',
+                arrivee: 'Andoranofotsy',
+                conducteur_id: 1,
+                moto_id: 2,
+                client_id: 1
+            };
+            
+            const res = await fetch('/courses/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(data)
+            });
+            
+            const result = await res.json();
+            document.getElementById('result-create').innerHTML = 
+                `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+        } catch (error) {
+            document.getElementById('result-create').innerHTML = 
+                `Erreur: ${error.message}`;
+        }
+    }
+    
+    async function testValidate() {
+        try {
+            const id = document.getElementById('validateId').value;
+            const res = await fetch(`/courses/validate/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                }
+            });
+            
+            const result = await res.json();
+            document.getElementById('result-validate').innerHTML = 
+                `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+        } catch (error) {
+            document.getElementById('result-validate').innerHTML = 
+                `Erreur: ${error.message}`;
+        }
+    }
+    </script>
+</body>
+</html>

@@ -8,30 +8,32 @@ use Tracy\Debugger;
 
 class SecurityHeadersMiddleware
 {
-	protected Engine $app;
+    protected Engine $app;
 
-	public function __construct(Engine $app)
-	{
-		$this->app = $app;
-	}
-	
-	public function before(array $params): void
-	{
-		$nonce = $this->app->get('csp_nonce');
+    public function __construct(Engine $app)
+    {
+        $this->app = $app;
+    }
+    
+    public function before(array $params): void
+    {
+        $nonce = $this->app->get('csp_nonce');
 
-		// development mode to execute Tracy debug bar CSS
-		$tracyCssBypass = "'nonce-{$nonce}'";
-		if(Debugger::$showBar === true) {
-			$tracyCssBypass = ' \'unsafe-inline\'';
-		}
-
-		$csp = "default-src 'self'; script-src 'self' 'nonce-{$nonce}' 'strict-dynamic'; style-src 'self' {$tracyCssBypass}; img-src 'self' data:;";
-		$this->app->response()->header('X-Frame-Options', 'SAMEORIGIN');
-		$this->app->response()->header("Content-Security-Policy", $csp);
-		$this->app->response()->header('X-XSS-Protection', '1; mode=block');
-		$this->app->response()->header('X-Content-Type-Options', 'nosniff');
-		$this->app->response()->header('Referrer-Policy', 'no-referrer-when-downgrade');
-		$this->app->response()->header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-		$this->app->response()->header('Permissions-Policy', 'geolocation=()');
-	}
+        // En développement, on désactive CSP strict pour les scripts
+        if (Debugger::$showBar === true) {
+            // Mode développement : plus permissif
+            $csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;";
+        } else {
+            // Mode production : strict
+            $csp = "default-src 'self'; script-src 'self' 'nonce-{$nonce}' 'strict-dynamic'; style-src 'self' 'nonce-{$nonce}'; img-src 'self' data:;";
+        }
+        
+        $this->app->response()->header('X-Frame-Options', 'SAMEORIGIN');
+        $this->app->response()->header("Content-Security-Policy", $csp);
+        $this->app->response()->header('X-XSS-Protection', '1; mode=block');
+        $this->app->response()->header('X-Content-Type-Options', 'nosniff');
+        $this->app->response()->header('Referrer-Policy', 'no-referrer-when-downgrade');
+        $this->app->response()->header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        $this->app->response()->header('Permissions-Policy', 'geolocation=()');
+    }
 }

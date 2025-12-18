@@ -1,17 +1,17 @@
 <?php
 // Page d'accueil — tableau financier amélioré.
-// Utilise Flight::db(), n'ajoute aucun fichier.
 if (!class_exists('Flight')) {
     echo 'Flight non disponible.';
     exit;
 }
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
-function fmt($n) { return number_format((float)$n, 2, ',', ' '); }
+function fmt($n) { return number_format((float)$n, 0, '', ' '); }
 
 $db = Flight::db();
 $error = null;
 $totals = ['recette'=>0.0,'salaire'=>0.0,'entretien'=>0.0,'depense'=>0.0,'benefice'=>0.0];
 $dates = [];
+
 try {
     $sql = "
         SELECT
@@ -67,6 +67,7 @@ try {
             'depense'=>$depense,
             'benefice'=>$benefice,
         ];
+        
         if (!isset($dates[$date])) {
             $dates[$date] = ['rows'=>[], 'totals'=>['recette'=>0.0,'salaire'=>0.0,'entretien'=>0.0,'depense'=>0.0,'benefice'=>0.0]];
         }
@@ -85,9 +86,17 @@ try {
     }
 } catch (Exception $ex) {
     $error = $ex->getMessage();
-    try { $r = $db->query("SELECT SUM(montant) AS s FROM Moto_courses")->fetch(PDO::FETCH_ASSOC); $totals['recette'] = (float)($r['s'] ?? 0); } catch (Exception $_) {}
+    try { 
+        $r = $db->query("SELECT SUM(montant) AS s FROM Moto_courses")->fetch(PDO::FETCH_ASSOC); 
+        $totals['recette'] = (float)($r['s'] ?? 0); 
+    } catch (Exception $_) {}
 }
-uksort($dates, function($a,$b){ if ($a==='Sans date') return 1; if ($b==='Sans date') return -1; return strcmp($b,$a); });
+
+uksort($dates, function($a,$b){ 
+    if ($a==='Sans date') return 1; 
+    if ($b==='Sans date') return -1; 
+    return strcmp($b,$a); 
+});
 ?>
 <!doctype html>
 <html lang="fr">
@@ -102,29 +111,30 @@ uksort($dates, function($a,$b){ if ($a==='Sans date') return 1; if ($b==='Sans d
   <div class="header">
     <div>
       <div class="title">Tableau financier — Coopérative Moto</div>
-      <div class="small">Affiche totaux et détail des courses (conducteur, client, moto, horaire, départ/arrivée)</div>
+      <div class="small">Affiche totaux et détail des courses</div>
     </div>
     <div class="links">
-      <?php if (file_exists(__DIR__ . '/courses.php')): ?><a href="/ui/courses">Gestion des courses</a><?php endif; ?>
-      <?php if (file_exists(__DIR__ . '/modification.php')): ?><a href="/ui/course/1" style="background:#06b6d4">Modifier une course</a><?php endif; ?>
+      <a href="/ui/courses">Gestion des courses</a>
+      <a href="/ui/course/1" style="background:#06b6d4">Modifier une course</a>
     </div>
   </div>
 
   <div class="card">
-    <?php if ($error): ?><div style="color:#a00;margin-bottom:10px">Erreur : <?= e($error) ?></div><?php endif; ?>
+    <?php if ($error): ?>
+      <div style="color:#a00;margin-bottom:10px">Erreur : <?= e($error) ?></div>
+    <?php endif; ?>
 
     <div class="kpis">
       <div class="kpi"><div class="label">Recettes</div><b><?= e(fmt($totals['recette'])) ?> Ar</b></div>
       <div class="kpi"><div class="label">Salaires</div><b><?= e(fmt($totals['salaire'])) ?> Ar</b></div>
       <div class="kpi"><div class="label">Entretien</div><b><?= e(fmt($totals['entretien'])) ?> Ar</b></div>
-      <div class="kpi"><div class="label">Dépenses (sal + entretien)</div><b><?= e(fmt($totals['depense'])) ?> Ar</b></div>
-      <div class="kpi"><div class="label">Bénéfice (recette - dépense)</div><b class="<?= $totals['benefice']>=0 ? 'badge green' : 'badge red' ?>"><?= e(fmt($totals['benefice'])) ?> Ar</b></div>
+      <div class="kpi"><div class="label">Dépenses</div><b><?= e(fmt($totals['depense'])) ?> Ar</b></div>
+      <div class="kpi"><div class="label">Bénéfice</div><b class="<?= $totals['benefice']>=0 ? 'badge green' : 'badge red' ?>"><?= e(fmt($totals['benefice'])) ?> Ar</b></div>
     </div>
 
     <div class="test-results">
-      <button class="test-btn" id="testCoursesBtn">Tester /ui/courses</button>
-      <button class="test-btn" id="testCourseBtn">Tester /ui/course/1</button>
-      <button class="test-btn" id="testApiBtn">Tester /courses (API)</button>
+      <button class="test-btn" id="testCoursesBtn">Tester API courses</button>
+      <button class="test-btn" id="testCourseBtn">Tester modification</button>
       <div id="testOutput" class="small" style="margin-left:8px"></div>
     </div>
 
@@ -134,7 +144,10 @@ uksort($dates, function($a,$b){ if ($a==='Sans date') return 1; if ($b==='Sans d
       <?php foreach ($dates as $date => $block): ?>
         <div class="date-block" id="date-<?= e($date) ?>">
           <div class="date-header">
-            <div><button class="collapsible" data-target="tbl-<?= e($date) ?>"><?= e($date) ?></button> &nbsp; <span class="small">(<?= count($block['rows']) ?> course<?= count($block['rows'])>1?'s':'' ?>)</span></div>
+            <div>
+              <button class="collapsible" data-target="tbl-<?= e($date) ?>"><?= e($date) ?></button> 
+              <span class="small">(<?= count($block['rows']) ?> course<?= count($block['rows'])>1?'s':'' ?>)</span>
+            </div>
             <div class="date-totals small">
               Recette: <strong><?= e(fmt($block['totals']['recette'])) ?> Ar</strong>&nbsp;|
               Dépense: <strong><?= e(fmt($block['totals']['depense'])) ?> Ar</strong>&nbsp;|
@@ -176,7 +189,7 @@ uksort($dates, function($a,$b){ if ($a==='Sans date') return 1; if ($b==='Sans d
                   <td><?= e($r['depart'] . ' → ' . $r['arrivee']) ?></td>
                   <td class="small"><?= $r['valide'] ? 'Oui' : 'Non' ?></td>
                   <td>
-                    <?php if (! $r['valide']): ?>
+                    <?php if (!$r['valide']): ?>
                       <button class="action-btn validate" onclick="validateCourse(<?= $r['id'] ?>)">Valider</button>
                     <?php endif; ?>
                     <a class="action-btn view" href="/ui/course/<?= $r['id'] ?>">Modifier</a>
@@ -188,51 +201,66 @@ uksort($dates, function($a,$b){ if ($a==='Sans date') return 1; if ($b==='Sans d
         </div>
       <?php endforeach; ?>
     <?php endif; ?>
-
   </div>
 </div>
 
 <script>
-document.querySelectorAll('.collapsible').forEach(btn=>{
-  btn.addEventListener('click', ()=> {
+// Gestion des sections collapsibles
+document.querySelectorAll('.collapsible').forEach(btn => {
+  btn.addEventListener('click', () => {
     const id = btn.getAttribute('data-target');
     const tbl = document.getElementById(id);
-    if (!tbl) return;
-    tbl.style.display = tbl.style.display === 'none' ? '' : 'none';
+    if (tbl) {
+      tbl.style.display = tbl.style.display === 'none' ? '' : 'none';
+    }
   });
 });
 
-async function testUrl(u){
+// Tests API
+async function testUrl(u) {
   try {
     const res = await fetch(u, { method: 'GET' });
     return `${res.status} ${res.statusText}`;
   } catch (e) {
-    return 'Erreur: '+e.message;
+    return 'Erreur: ' + e.message;
   }
 }
 
-document.getElementById('testCoursesBtn').addEventListener('click', async ()=>{
-  document.getElementById('testOutput').textContent = 'Test en cours...';
-  const r = await testUrl('/ui/courses');
-  document.getElementById('testOutput').textContent = '/ui/courses → ' + r;
-});
-document.getElementById('testCourseBtn').addEventListener('click', async ()=>{
-  document.getElementById('testOutput').textContent = 'Test en cours...';
-  const r = await testUrl('/ui/course/1');
-  document.getElementById('testOutput').textContent = '/ui/course/1 → ' + r;
-});
-document.getElementById('testApiBtn').addEventListener('click', async ()=>{
+document.getElementById('testCoursesBtn').addEventListener('click', async () => {
   document.getElementById('testOutput').textContent = 'Test en cours...';
   const r = await testUrl('/courses');
   document.getElementById('testOutput').textContent = '/courses → ' + r;
 });
 
-async function validateCourse(id){
-  if(!confirm('Valider la course ? (une fois validée, elle ne sera plus modifiable)')) return;
+document.getElementById('testCourseBtn').addEventListener('click', async () => {
+  document.getElementById('testOutput').textContent = 'Test en cours...';
+  const r = await testUrl('/courses/1');
+  document.getElementById('testOutput').textContent = '/courses/1 → ' + r;
+});
+
+// Validation d'une course
+async function validateCourse(id) {
+  if (!confirm('Valider la course ? (une fois validée, elle ne sera plus modifiable)')) return;
   try {
-    const res = await fetch(`/courses/validate/${id}`, { method: 'POST' });
-    if (!res.ok) throw new Error('Erreur serveur');
-    location.reload();
+    const res = await fetch(`/courses/validate/${id}`, { 
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      }
+    });
+    
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Erreur serveur');
+    }
+    
+    const result = await res.json();
+    if (result.success) {
+      alert('Course validée avec succès !');
+      location.reload();
+    } else {
+      throw new Error('Échec de la validation');
+    }
   } catch (e) {
     alert('Erreur: ' + e.message);
   }
