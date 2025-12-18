@@ -1,5 +1,5 @@
 <?php
-//tableau financier amélioré.
+// Tableau financier amélioré avec filtres.
 if (!class_exists('Flight')) {
     echo 'Flight non disponible.';
     exit;
@@ -12,7 +12,31 @@ $error = null;
 $totals = ['recette'=>0.0,'salaire'=>0.0,'entretien'=>0.0,'depense'=>0.0,'benefice'=>0.0];
 $dates = [];
 
+// Récupérer les filtres depuis GET
+$date_debut = $_GET['date_debut'] ?? '';
+$date_fin = $_GET['date_fin'] ?? '';
+$moto_id = $_GET['moto_id'] ?? '';
+$conducteur_id = $_GET['conducteur_id'] ?? '';
+$client_id = $_GET['client_id'] ?? '';
+
+// Récupérer les listes pour les filtres
 try {
+    // Liste des motos pour le filtre
+    $motos_list = $db->query('SELECT id, immatriculation FROM Moto_motos ORDER BY immatriculation')->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Liste des conducteurs pour le filtre
+    $conducteurs_list = $db->query('SELECT id, nom FROM Moto_conducteurs ORDER BY nom')->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Liste des clients pour le filtre
+    $clients_list = $db->query('SELECT id, nom FROM Moto_clients ORDER BY nom')->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $motos_list = [];
+    $conducteurs_list = [];
+    $clients_list = [];
+}
+
+try {
+    // Construction de la requête avec filtres
     $sql = "
         SELECT
             c.id,
@@ -37,10 +61,55 @@ try {
         LEFT JOIN Moto_conducteurs co ON c.conducteur_id = co.id
         LEFT JOIN Moto_motos m ON c.moto_id = m.id
         LEFT JOIN Moto_clients cl ON c.client_id = cl.id
-        ORDER BY c.date_course DESC, c.heure_debut ASC, c.id ASC
+        WHERE 1=1
     ";
-    $stmt = $db->query($sql);
+    
+    $params = [];
+    
+    // Filtre par date de début
+    if (!empty($date_debut)) {
+        $sql .= " AND c.date_course >= ?";
+        $params[] = $date_debut;
+    }
+    
+    // Filtre par date de fin
+    if (!empty($date_fin)) {
+        $sql .= " AND c.date_course <= ?";
+        $params[] = $date_fin;
+    }
+    
+    // Filtre par moto
+    if (!empty($moto_id) && is_numeric($moto_id)) {
+        $sql .= " AND c.moto_id = ?";
+        $params[] = (int)$moto_id;
+    }
+    
+    // Filtre par conducteur
+    if (!empty($conducteur_id) && is_numeric($conducteur_id)) {
+        $sql .= " AND c.conducteur_id = ?";
+        $params[] = (int)$conducteur_id;
+    }
+    
+    // Filtre par client
+    if (!empty($client_id) && is_numeric($client_id)) {
+        $sql .= " AND c.client_id = ?";
+        $params[] = (int)$client_id;
+    }
+    
+    $sql .= " ORDER BY c.date_course DESC, c.heure_debut ASC, c.id ASC";
+    
+    if (empty($params)) {
+        $stmt = $db->query($sql);
+    } else {
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+    }
+    
     $courses = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    // Réinitialiser les totaux
+    $totals = ['recette'=>0.0,'salaire'=>0.0,'entretien'=>0.0,'depense'=>0.0,'benefice'=>0.0];
+    $dates = [];
 
     foreach ($courses as $c) {
         $date = $c['date'] ?? 'Sans date';
@@ -86,10 +155,6 @@ try {
     }
 } catch (Exception $ex) {
     $error = $ex->getMessage();
-    try { 
-        $r = $db->query("SELECT SUM(montant) AS s FROM Moto_courses")->fetch(PDO::FETCH_ASSOC); 
-        $totals['recette'] = (float)($r['s'] ?? 0); 
-    } catch (Exception $_) {}
 }
 
 uksort($dates, function($a,$b){ 
@@ -123,6 +188,109 @@ uksort($dates, function($a,$b){
     <?php if ($error): ?>
       <div style="color:#a00;margin-bottom:10px">Erreur : <?= e($error) ?></div>
     <?php endif; ?>
+
+    <!-- Section des filtres -->
+    <div class="filter-section">
+      <h3 style="margin-top:0;margin-bottom:15px;">Filtres de recherche</h3>
+      <form method="GET" action="/dashboard" class="filter-form">
+        <div class="filter-grid">
+          <div class="filter-group">
+            <label for="date_debut">Date début</label>
+            <input type="date" id="date_debut" name="date_debut" value="<?= e($date_debut) ?>">
+          </div>
+          
+          <div class="filter-group">
+            <label for="date_fin">Date fin</label>
+            <input type="date" id="date_fin" name="date_fin" value="<?= e($date_fin) ?>">
+          </div>
+          
+          <div class="filter-group">
+            <label for="moto_id">Moto</label>
+            <select id="moto_id" name="moto_id">
+              <option value="">Toutes les motos</option>
+              <?php foreach ($motos_list as $moto): ?>
+                <option value="<?= e($moto['id']) ?>" <?= $moto_id == $moto['id'] ? 'selected' : '' ?>>
+                  <?= e($moto['immatriculation']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="conducteur_id">Conducteur</label>
+            <select id="conducteur_id" name="conducteur_id">
+              <option value="">Tous les conducteurs</option>
+              <?php foreach ($conducteurs_list as $conducteur): ?>
+                <option value="<?= e($conducteur['id']) ?>" <?= $conducteur_id == $conducteur['id'] ? 'selected' : '' ?>>
+                  <?= e($conducteur['nom']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="client_id">Client</label>
+            <select id="client_id" name="client_id">
+              <option value="">Tous les clients</option>
+              <?php foreach ($clients_list as $client): ?>
+                <option value="<?= e($client['id']) ?>" <?= $client_id == $client['id'] ? 'selected' : '' ?>>
+                  <?= e($client['nom']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+        </div>
+        
+        <div class="filter-actions">
+          <button type="submit" class="action-btn" style="background:#0f62fe;">Appliquer les filtres</button>
+          <a href="/dashboard" class="action-btn" style="background:#6b7280;text-decoration:none;">Réinitialiser</a>
+        </div>
+      </form>
+      
+      <?php if (!empty($date_debut) || !empty($date_fin) || !empty($moto_id) || !empty($conducteur_id) || !empty($client_id)): ?>
+        <div class="active-filters">
+          <div class="small" style="margin-top:10px;">
+            <strong>Filtres actifs :</strong>
+            <?php 
+              $active_filters = [];
+              if (!empty($date_debut)) $active_filters[] = "À partir du " . e($date_debut);
+              if (!empty($date_fin)) $active_filters[] = "Jusqu'au " . e($date_fin);
+              if (!empty($moto_id)) {
+                $moto_name = '';
+                foreach ($motos_list as $m) {
+                  if ($m['id'] == $moto_id) {
+                    $moto_name = e($m['immatriculation']);
+                    break;
+                  }
+                }
+                $active_filters[] = "Moto: " . $moto_name;
+              }
+              if (!empty($conducteur_id)) {
+                $conducteur_name = '';
+                foreach ($conducteurs_list as $c) {
+                  if ($c['id'] == $conducteur_id) {
+                    $conducteur_name = e($c['nom']);
+                    break;
+                  }
+                }
+                $active_filters[] = "Conducteur: " . $conducteur_name;
+              }
+              if (!empty($client_id)) {
+                $client_name = '';
+                foreach ($clients_list as $cl) {
+                  if ($cl['id'] == $client_id) {
+                    $client_name = e($cl['nom']);
+                    break;
+                  }
+                }
+                $active_filters[] = "Client: " . $client_name;
+              }
+              echo implode(' • ', $active_filters);
+            ?>
+          </div>
+        </div>
+      <?php endif; ?>
+    </div>
 
     <div class="kpis">
       <div class="kpi"><div class="label">Recettes</div><b><?= e(fmt($totals['recette'])) ?> Ar</b></div>
